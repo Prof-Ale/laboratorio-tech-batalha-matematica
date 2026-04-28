@@ -134,3 +134,44 @@ body::after{
 @keyframes popAnim{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
 .pop{animation:popAnim .35s ease}
 @media(min-width:640px){.trilhas{grid-template-columns:repeat(4,1fr)}}
+#scoreboard-battle{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    margin:14px 0;
+    padding:14px;
+    border-radius:16px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.12);
+    font-family:'Orbitron', sans-serif;
+}
+
+.team-box{
+    flex:1;
+    text-align:center;
+    padding:12px;
+    border-radius:12px;
+    font-size:1.4rem;
+    font-weight:900;
+}
+
+.team-box span{
+    display:block;
+    font-size:2rem;
+    margin-top:6px;
+}
+
+.team-a{
+    border:2px solid #00e5ff;
+}
+
+.team-b{
+    border:2px solid #ff4d6d;
+}
+
+.battle-round{
+    font-size:1rem;
+    font-weight:700;
+    text-align:center;
+}
