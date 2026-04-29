@@ -18,8 +18,11 @@ import {
 } from './ui-manager.js';
 
 let qAtual = null;
+ codex/check-project-functionality-and-structure-olkyu6
 let inicioQuestaoMs = 0;
 let sonsTorcidaAtivos = true;
+=======
+ main
 
 /* ========================================================
    MODO BATALHA 7ºA vs 7ºB
@@ -28,7 +31,10 @@ let scoreA = 0;
 let scoreB = 0;
 let turnoAtual = "A";
 let rodadaAtual = 1;
+ codex/check-project-functionality-and-structure-olkyu6
 let ultimaLideranca = null;
+=======
+ main
 
 const PONTOS_POR_ACERTO = 10;
 const META_VITORIA = 100;
@@ -39,6 +45,7 @@ function atualizarPlacar() {
 
     if (elA) elA.textContent = scoreA;
     if (elB) elB.textContent = scoreB;
+ codex/check-project-functionality-and-structure-olkyu6
 
     const board = document.getElementById("scoreboard-battle");
     if (board) {
@@ -46,6 +53,8 @@ function atualizarPlacar() {
         void board.offsetWidth;
         board.classList.add("score-pulse");
     }
+=======
+ main
 }
 
 function atualizarMensagemTurno() {
@@ -61,6 +70,7 @@ function atualizarMensagemTurno() {
 
 function pontuarEquipe() {
     let equipePontuada = turnoAtual;
+codex/check-project-functionality-and-structure-olkyu6
     const pontos = calcularPontosDaRodada();
 
     if (turnoAtual === "A") {
@@ -68,11 +78,20 @@ function pontuarEquipe() {
         turnoAtual = "B";
     } else {
         scoreB += pontos;
+=======
+
+    if (turnoAtual === "A") {
+        scoreA += PONTOS_POR_ACERTO;
+        turnoAtual = "B";
+    } else {
+        scoreB += PONTOS_POR_ACERTO;
+ main
         turnoAtual = "A";
     }
 
     rodadaAtual++;
     atualizarPlacar();
+ codex/check-project-functionality-and-structure-olkyu6
     anunciarLideranca();
     verificarCampeao();
 
@@ -90,6 +109,11 @@ function calcularPontosDaRodada() {
     if (rodadaEspecial) pontos *= 2;
     if (desafioFinal) pontos = Math.max(pontos, 30);
     return pontos;
+=======
+    verificarCampeao();
+
+    return equipePontuada;
+ main
 }
 
 function alternarTurnoErro() {
@@ -103,11 +127,16 @@ function verificarCampeao() {
         const vencedor = scoreA > scoreB ? "🏆 7ºA" : "🏆 7ºB";
 
         setTimeout(() => {
+ codex/check-project-functionality-and-structure-olkyu6
             mostrarTelaCampeao(`${vencedor} venceu a Batalha Matemática!`);
+=======
+            alert(`${vencedor} venceu a Batalha Matemática!`);
+ main
         }, 300);
     }
 }
 
+codex/check-project-functionality-and-structure-olkyu6
 function anunciarLideranca() {
     const fb = document.getElementById("fb");
     if (!fb) return;
@@ -172,6 +201,8 @@ function mostrarFogos() {
     setTimeout(() => fx.remove(), 2600);
 }
 
+=======
+main
 function resetarBatalha() {
     scoreA = 0;
     scoreB = 0;
@@ -308,7 +339,10 @@ function renderQ(q) {
 
     atualizarMensagemTurno();
     atualizarDiagnostico();
+ codex/check-project-functionality-and-structure-olkyu6
     inicioQuestaoMs = Date.now();
+=======
+main
 
     const g = document.getElementById("grid-botoes");
     g.innerHTML = "";
@@ -383,7 +417,11 @@ function processarAcerto(q, fbEl) {
     if (G.combo % 5 === 0) G.nivel++;
     if (q.bncc) G.historico[q.bncc].acertos++;
 
+codex/check-project-functionality-and-structure-olkyu6
     const { equipePontuada, pontos } = pontuarEquipe();
+=======
+    const equipePontuada = pontuarEquipe();
+main
     
     const elogios = ["Excelente", "Muito bem", "Fabuloso", "Na mosca", "Perfeito"];
     const elogio = elogios[Math.floor(Math.random() * elogios.length)];
@@ -392,9 +430,14 @@ function processarAcerto(q, fbEl) {
     fbEl.innerHTML = `
         ✓ ${elogio}!<br>
         <small>${q.passo}</small><br>
+codex/check-project-functionality-and-structure-olkyu6
         <strong>+${pontos} pontos para ${equipePontuada === "A" ? "7ºA" : "7ºB"}</strong>
     `;
     tocarTorcida();
+=======
+        <strong>+10 pontos para ${equipePontuada === "A" ? "7ºA" : "7ºB"}</strong>
+    `;
+main
 
     narrarContexto(`${elogio}! ${q.passo}`);
     tocarAv("ok");
@@ -483,10 +526,13 @@ document.addEventListener('keydown', (e) => {
             e.preventDefault();
         }
     }
+codex/check-project-functionality-and-structure-olkyu6
 
     if (e.key.toLowerCase() === 't') {
         sonsTorcidaAtivos = !sonsTorcidaAtivos;
         const fb = document.getElementById("fb");
         if (fb) fb.innerHTML = `🔊 Torcida ${sonsTorcidaAtivos ? "ATIVADA" : "DESATIVADA"}`;
     }
+=======
+ main
 });
