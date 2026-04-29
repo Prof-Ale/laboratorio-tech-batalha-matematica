@@ -176,5 +176,8 @@ body::after{
     text-align:center;
 }
 
+.score-pulse{animation:scorePulse .4s ease;}
+@keyframes scorePulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+
 .diag-box{font-size:12px;line-height:1.45;color:var(--text-muted);background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.2);border-radius:10px;padding:8px 10px;}
 .diag-box strong{color:var(--neon-yellow);}
