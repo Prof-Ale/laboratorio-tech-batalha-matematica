@@ -1,13 +1,19 @@
 // js/data/questions/index.js
 
-import { trilha1 } from './trilha1.js';
-import { trilha2 } from './trilha2.js';
-import { trilha3 } from './trilha3.js';
-import { trilha4 } from './trilha4.js';
+import { bloco1 } from './bloco1.js';
+import { bloco2 } from './bloco2.js';
+import { bloco3 } from './bloco3.js';
+import { bloco4 } from './bloco4.js';
+import { bloco5 } from './bloco5.js';
+
+function marcarBloco(questoes, bloco) {
+    return questoes.map((q) => ({ ...q, bloco }));
+}
 
 export const pool = [
-    ...trilha1,
-    ...trilha2,
-    ...trilha3,
-    ...trilha4
+    ...marcarBloco(bloco1, 1),
+    ...marcarBloco(bloco2, 2),
+    ...marcarBloco(bloco3, 3),
+    ...marcarBloco(bloco4, 4),
+    ...marcarBloco(bloco5, 5)
 ];
