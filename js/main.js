@@ -4,7 +4,7 @@
  */
 
 import { G } from './engine/gameState.js';
-import { selQ } from './engine/selector.js';
+import { selQ, getSelectorDiag } from './engine/selector.js';
 import { renderCv, animarArcos, setAnimando } from './game-engine.js';
 import { 
     updHUD, 
@@ -18,6 +18,8 @@ import {
 } from './ui-manager.js';
 
 let qAtual = null;
+let inicioQuestaoMs = 0;
+let sonsTorcidaAtivos = true;
 
 /* ========================================================
    MODO BATALHA 7ºA vs 7ºB
@@ -26,6 +28,7 @@ let scoreA = 0;
 let scoreB = 0;
 let turnoAtual = "A";
 let rodadaAtual = 1;
+let ultimaLideranca = null;
 
 const PONTOS_POR_ACERTO = 10;
 const META_VITORIA = 100;
@@ -36,6 +39,13 @@ function atualizarPlacar() {
 
     if (elA) elA.textContent = scoreA;
     if (elB) elB.textContent = scoreB;
+
+    const board = document.getElementById("scoreboard-battle");
+    if (board) {
+        board.classList.remove("score-pulse");
+        void board.offsetWidth;
+        board.classList.add("score-pulse");
+    }
 }
 
 function atualizarMensagemTurno() {
@@ -51,20 +61,35 @@ function atualizarMensagemTurno() {
 
 function pontuarEquipe() {
     let equipePontuada = turnoAtual;
+    const pontos = calcularPontosDaRodada();
 
     if (turnoAtual === "A") {
-        scoreA += PONTOS_POR_ACERTO;
+        scoreA += pontos;
         turnoAtual = "B";
     } else {
-        scoreB += PONTOS_POR_ACERTO;
+        scoreB += pontos;
         turnoAtual = "A";
     }
 
     rodadaAtual++;
     atualizarPlacar();
+    anunciarLideranca();
     verificarCampeao();
 
-    return equipePontuada;
+    return { equipePontuada, pontos };
+}
+
+function calcularPontosDaRodada() {
+    const rodadaEspecial = rodadaAtual % 5 === 0;
+    const desafioFinal = (scoreA >= 70 || scoreB >= 70);
+    const comboBonus = Math.min((G.combo * 5), 10);
+    const tempoResposta = Date.now() - inicioQuestaoMs;
+    const bonusRelampago = tempoResposta <= 7000 ? 5 : 0;
+    let pontos = PONTOS_POR_ACERTO + comboBonus;
+    pontos += bonusRelampago;
+    if (rodadaEspecial) pontos *= 2;
+    if (desafioFinal) pontos = Math.max(pontos, 30);
+    return pontos;
 }
 
 function alternarTurnoErro() {
@@ -78,9 +103,73 @@ function verificarCampeao() {
         const vencedor = scoreA > scoreB ? "🏆 7ºA" : "🏆 7ºB";
 
         setTimeout(() => {
-            alert(`${vencedor} venceu a Batalha Matemática!`);
+            mostrarTelaCampeao(`${vencedor} venceu a Batalha Matemática!`);
         }, 300);
     }
+}
+
+function anunciarLideranca() {
+    const fb = document.getElementById("fb");
+    if (!fb) return;
+    let estado = "empate";
+    if (scoreA > scoreB) estado = "A";
+    if (scoreB > scoreA) estado = "B";
+    if (estado === ultimaLideranca) return;
+    ultimaLideranca = estado;
+
+    if (estado === "A") fb.innerHTML += `<br><strong>🔥 7ºA assumiu a liderança!</strong>`;
+    else if (estado === "B") fb.innerHTML += `<br><strong>⚡ 7ºB virou o jogo!</strong>`;
+    else fb.innerHTML += `<br><strong>🤝 Empate total na batalha!</strong>`;
+}
+
+function mostrarTelaCampeao(texto) {
+    const go = document.getElementById("go");
+    const goTxt = document.getElementById("go-txt");
+    if (goTxt) goTxt.textContent = texto;
+    if (go) go.classList.add("show");
+    mostrarFogos();
+    tocarSomVitoria();
+}
+
+function tocarSomVitoria() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = 880;
+        gain.gain.value = 0.04;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.35);
+    } catch (_) {}
+}
+
+function tocarTorcida() {
+    if (!sonsTorcidaAtivos) return;
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.value = 320;
+        gain.gain.value = 0.02;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+    } catch (_) {}
+}
+
+function mostrarFogos() {
+    const jaExiste = document.getElementById("fx-fogos");
+    if (jaExiste) jaExiste.remove();
+    const fx = document.createElement("div");
+    fx.id = "fx-fogos";
+    fx.innerHTML = `<span>✨</span><span>🎉</span><span>✨</span><span>🎊</span><span>✨</span>`;
+    document.body.appendChild(fx);
+    setTimeout(() => fx.remove(), 2600);
 }
 
 function resetarBatalha() {
@@ -95,24 +184,28 @@ function resetarBatalha() {
    PERSISTÊNCIA DE DADOS (LOCALSTORAGE)
 ======================================================== */
 function carregarDadosSalvos() {
-    const backup = localStorage.getItem('laboratorio_tech_data');
-    if (backup) {
-        try {
+    try {
+        const backup = localStorage.getItem('laboratorio_tech_data');
+        if (backup) {
             const dados = JSON.parse(backup);
             G.historico = dados.historico || {};
             G.nome = dados.nome || "";
-        } catch (e) {
-            console.error("Erro ao recuperar banco de dados local", e);
         }
+    } catch (e) {
+        console.warn("LocalStorage indisponível, seguindo sem persistência.", e);
     }
 }
 
 function salvarProgresso() {
-    const dataToSave = {
-        historico: G.historico,
-        nome: G.nome
-    };
-    localStorage.setItem('laboratorio_tech_data', JSON.stringify(dataToSave));
+    try {
+        const dataToSave = {
+            historico: G.historico,
+            nome: G.nome
+        };
+        localStorage.setItem('laboratorio_tech_data', JSON.stringify(dataToSave));
+    } catch (e) {
+        // Ambiente sem storage (modo privado / bloqueio) não deve travar o jogo.
+    }
 }
 
 carregarDadosSalvos();
@@ -192,6 +285,20 @@ function shuffle(array) {
     return array;
 }
 
+
+function atualizarDiagnostico() {
+    const box = document.getElementById('diag-status');
+    if (!box) return;
+
+    const d = getSelectorDiag();
+    box.innerHTML = `
+        <strong>Diagnóstico</strong><br>
+        Bloco solicitado: ${d.blocoSolicitado} • Bloco usado: ${d.blocoUsado}<br>
+        Pool total: ${d.poolTotal} • Disponíveis no bloco: ${d.disponiveisBloco}<br>
+        Fallback global: ${d.fallbackGlobal ? 'SIM' : 'NÃO'}
+    `;
+}
+
 function renderQ(q) {
     if (!q) return;
 
@@ -204,6 +311,8 @@ function renderQ(q) {
     renderCv(q);
 
     atualizarMensagemTurno();
+    atualizarDiagnostico();
+    inicioQuestaoMs = Date.now();
 
     const g = document.getElementById("grid-botoes");
     g.innerHTML = "";
@@ -278,7 +387,7 @@ function processarAcerto(q, fbEl) {
     if (G.combo % 5 === 0) G.nivel++;
     if (q.bncc) G.historico[q.bncc].acertos++;
 
-    const equipePontuada = pontuarEquipe();
+    const { equipePontuada, pontos } = pontuarEquipe();
     
     const elogios = ["Excelente", "Muito bem", "Fabuloso", "Na mosca", "Perfeito"];
     const elogio = elogios[Math.floor(Math.random() * elogios.length)];
@@ -287,8 +396,9 @@ function processarAcerto(q, fbEl) {
     fbEl.innerHTML = `
         ✓ ${elogio}!<br>
         <small>${q.passo}</small><br>
-        <strong>+10 pontos para ${equipePontuada === "A" ? "7ºA" : "7ºB"}</strong>
+        <strong>+${pontos} pontos para ${equipePontuada === "A" ? "7ºA" : "7ºB"}</strong>
     `;
+    tocarTorcida();
 
     narrarContexto(`${elogio}! ${q.passo}`);
     tocarAv("ok");
@@ -376,5 +486,11 @@ document.addEventListener('keydown', (e) => {
             atv.click();
             e.preventDefault();
         }
+    }
+
+    if (e.key.toLowerCase() === 't') {
+        sonsTorcidaAtivos = !sonsTorcidaAtivos;
+        const fb = document.getElementById("fb");
+        if (fb) fb.innerHTML = `🔊 Torcida ${sonsTorcidaAtivos ? "ATIVADA" : "DESATIVADA"}`;
     }
 });
