@@ -18,6 +18,11 @@ import {
 } from './ui-manager.js';
 
 let qAtual = null;
+ codex/check-project-functionality-and-structure-olkyu6
+let inicioQuestaoMs = 0;
+let sonsTorcidaAtivos = true;
+=======
+ main
 
 /* ========================================================
    MODO BATALHA 7ºA vs 7ºB
@@ -26,6 +31,10 @@ let scoreA = 0;
 let scoreB = 0;
 let turnoAtual = "A";
 let rodadaAtual = 1;
+ codex/check-project-functionality-and-structure-olkyu6
+let ultimaLideranca = null;
+=======
+ main
 
 const PONTOS_POR_ACERTO = 10;
 const META_VITORIA = 100;
@@ -36,6 +45,16 @@ function atualizarPlacar() {
 
     if (elA) elA.textContent = scoreA;
     if (elB) elB.textContent = scoreB;
+ codex/check-project-functionality-and-structure-olkyu6
+
+    const board = document.getElementById("scoreboard-battle");
+    if (board) {
+        board.classList.remove("score-pulse");
+        void board.offsetWidth;
+        board.classList.add("score-pulse");
+    }
+=======
+ main
 }
 
 function atualizarMensagemTurno() {
@@ -51,20 +70,50 @@ function atualizarMensagemTurno() {
 
 function pontuarEquipe() {
     let equipePontuada = turnoAtual;
+codex/check-project-functionality-and-structure-olkyu6
+    const pontos = calcularPontosDaRodada();
+
+    if (turnoAtual === "A") {
+        scoreA += pontos;
+        turnoAtual = "B";
+    } else {
+        scoreB += pontos;
+=======
 
     if (turnoAtual === "A") {
         scoreA += PONTOS_POR_ACERTO;
         turnoAtual = "B";
     } else {
         scoreB += PONTOS_POR_ACERTO;
+ main
         turnoAtual = "A";
     }
 
     rodadaAtual++;
     atualizarPlacar();
+ codex/check-project-functionality-and-structure-olkyu6
+    anunciarLideranca();
+    verificarCampeao();
+
+    return { equipePontuada, pontos };
+}
+
+function calcularPontosDaRodada() {
+    const rodadaEspecial = rodadaAtual % 5 === 0;
+    const desafioFinal = (scoreA >= 70 || scoreB >= 70);
+    const comboBonus = Math.min((G.combo * 5), 10);
+    const tempoResposta = Date.now() - inicioQuestaoMs;
+    const bonusRelampago = tempoResposta <= 7000 ? 5 : 0;
+    let pontos = PONTOS_POR_ACERTO + comboBonus;
+    pontos += bonusRelampago;
+    if (rodadaEspecial) pontos *= 2;
+    if (desafioFinal) pontos = Math.max(pontos, 30);
+    return pontos;
+=======
     verificarCampeao();
 
     return equipePontuada;
+ main
 }
 
 function alternarTurnoErro() {
@@ -78,11 +127,82 @@ function verificarCampeao() {
         const vencedor = scoreA > scoreB ? "🏆 7ºA" : "🏆 7ºB";
 
         setTimeout(() => {
+ codex/check-project-functionality-and-structure-olkyu6
+            mostrarTelaCampeao(`${vencedor} venceu a Batalha Matemática!`);
+=======
             alert(`${vencedor} venceu a Batalha Matemática!`);
+ main
         }, 300);
     }
 }
 
+codex/check-project-functionality-and-structure-olkyu6
+function anunciarLideranca() {
+    const fb = document.getElementById("fb");
+    if (!fb) return;
+    let estado = "empate";
+    if (scoreA > scoreB) estado = "A";
+    if (scoreB > scoreA) estado = "B";
+    if (estado === ultimaLideranca) return;
+    ultimaLideranca = estado;
+
+    if (estado === "A") fb.innerHTML += `<br><strong>🔥 7ºA assumiu a liderança!</strong>`;
+    else if (estado === "B") fb.innerHTML += `<br><strong>⚡ 7ºB virou o jogo!</strong>`;
+    else fb.innerHTML += `<br><strong>🤝 Empate total na batalha!</strong>`;
+}
+
+function mostrarTelaCampeao(texto) {
+    const go = document.getElementById("go");
+    const goTxt = document.getElementById("go-txt");
+    if (goTxt) goTxt.textContent = texto;
+    if (go) go.classList.add("show");
+    mostrarFogos();
+    tocarSomVitoria();
+}
+
+function tocarSomVitoria() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = 880;
+        gain.gain.value = 0.04;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.35);
+    } catch (_) {}
+}
+
+function tocarTorcida() {
+    if (!sonsTorcidaAtivos) return;
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.value = 320;
+        gain.gain.value = 0.02;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+    } catch (_) {}
+}
+
+function mostrarFogos() {
+    const jaExiste = document.getElementById("fx-fogos");
+    if (jaExiste) jaExiste.remove();
+    const fx = document.createElement("div");
+    fx.id = "fx-fogos";
+    fx.innerHTML = `<span>✨</span><span>🎉</span><span>✨</span><span>🎊</span><span>✨</span>`;
+    document.body.appendChild(fx);
+    setTimeout(() => fx.remove(), 2600);
+}
+
+=======
+main
 function resetarBatalha() {
     scoreA = 0;
     scoreB = 0;
@@ -219,6 +339,10 @@ function renderQ(q) {
 
     atualizarMensagemTurno();
     atualizarDiagnostico();
+ codex/check-project-functionality-and-structure-olkyu6
+    inicioQuestaoMs = Date.now();
+=======
+main
 
     const g = document.getElementById("grid-botoes");
     g.innerHTML = "";
@@ -293,7 +417,11 @@ function processarAcerto(q, fbEl) {
     if (G.combo % 5 === 0) G.nivel++;
     if (q.bncc) G.historico[q.bncc].acertos++;
 
+codex/check-project-functionality-and-structure-olkyu6
+    const { equipePontuada, pontos } = pontuarEquipe();
+=======
     const equipePontuada = pontuarEquipe();
+main
     
     const elogios = ["Excelente", "Muito bem", "Fabuloso", "Na mosca", "Perfeito"];
     const elogio = elogios[Math.floor(Math.random() * elogios.length)];
@@ -302,8 +430,14 @@ function processarAcerto(q, fbEl) {
     fbEl.innerHTML = `
         ✓ ${elogio}!<br>
         <small>${q.passo}</small><br>
+codex/check-project-functionality-and-structure-olkyu6
+        <strong>+${pontos} pontos para ${equipePontuada === "A" ? "7ºA" : "7ºB"}</strong>
+    `;
+    tocarTorcida();
+=======
         <strong>+10 pontos para ${equipePontuada === "A" ? "7ºA" : "7ºB"}</strong>
     `;
+main
 
     narrarContexto(`${elogio}! ${q.passo}`);
     tocarAv("ok");
@@ -392,4 +526,13 @@ document.addEventListener('keydown', (e) => {
             e.preventDefault();
         }
     }
+codex/check-project-functionality-and-structure-olkyu6
+
+    if (e.key.toLowerCase() === 't') {
+        sonsTorcidaAtivos = !sonsTorcidaAtivos;
+        const fb = document.getElementById("fb");
+        if (fb) fb.innerHTML = `🔊 Torcida ${sonsTorcidaAtivos ? "ATIVADA" : "DESATIVADA"}`;
+    }
+=======
+ main
 });
