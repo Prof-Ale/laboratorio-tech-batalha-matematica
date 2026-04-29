@@ -175,3 +175,6 @@ body::after{
     font-weight:700;
     text-align:center;
 }
+
+.diag-box{font-size:12px;line-height:1.45;color:var(--text-muted);background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.2);border-radius:10px;padding:8px 10px;}
+.diag-box strong{color:var(--neon-yellow);}
