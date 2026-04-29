@@ -4,7 +4,7 @@
  */
 
 import { G } from './engine/gameState.js';
-import { selQ } from './engine/selector.js';
+import { selQ, getSelectorDiag } from './engine/selector.js';
 import { renderCv, animarArcos, setAnimando } from './game-engine.js';
 import { 
     updHUD, 
@@ -192,6 +192,20 @@ function shuffle(array) {
     return array;
 }
 
+
+function atualizarDiagnostico() {
+    const box = document.getElementById('diag-status');
+    if (!box) return;
+
+    const d = getSelectorDiag();
+    box.innerHTML = `
+        <strong>Diagnóstico</strong><br>
+        Bloco solicitado: ${d.blocoSolicitado} • Bloco usado: ${d.blocoUsado}<br>
+        Pool total: ${d.poolTotal} • Disponíveis no bloco: ${d.disponiveisBloco}<br>
+        Fallback global: ${d.fallbackGlobal ? 'SIM' : 'NÃO'}
+    `;
+}
+
 function renderQ(q) {
     if (!q) return;
 
@@ -204,6 +218,7 @@ function renderQ(q) {
     renderCv(q);
 
     atualizarMensagemTurno();
+    atualizarDiagnostico();
 
     const g = document.getElementById("grid-botoes");
     g.innerHTML = "";
