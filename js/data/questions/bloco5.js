@@ -1,86 +1,64 @@
+// bloco5.js - MMC, MDC e Divisibilidade (6º ano)
+// Substituiu Estatística para o evento de 06/05/2026
+
+import { trilha6 } from './trilha6.js';
+
 function randint(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function media(valores) {
-  const soma = valores.reduce((acc, n) => acc + n, 0);
-  return Number((soma / valores.length).toFixed(1));
-}
-
-function moda(valores) {
-  const freq = new Map();
-  valores.forEach((v) => freq.set(v, (freq.get(v) || 0) + 1));
-
-  let melhor = valores[0];
-  let maiorFreq = -1;
-  for (const [valor, quantidade] of freq.entries()) {
-    if (quantidade > maiorFreq) {
-      maiorFreq = quantidade;
-      melhor = valor;
-    }
+function mmc(a, b) {
+  const maior = Math.max(a, b);
+  const menor = Math.min(a, b);
+  for (let i = maior; i <= a * b; i += maior) {
+    if (i % menor === 0) return i;
   }
-
-  return melhor;
+  return a * b;
 }
 
-function distratoresNumero(valorCorreto) {
-  const base = Number(valorCorreto);
-  const opcoes = [
-    base,
-    Number((base + 1).toFixed(1)),
-    Number((base - 1).toFixed(1)),
-    Number((base + 2).toFixed(1))
+function mdc(a, b) {
+  while (b !== 0) {
+    let t = b;
+    b = a % b;
+    a = t;
+  }
+  return a;
+}
+
+// Gerador de questões de MMC
+export function gerarQuestoesBloco5(quantidade = 10) {
+  const questoes = [];
+  const pares = [
+    [2, 3], [3, 4], [4, 6], [5, 10], [6, 8],
+    [2, 5], [3, 9], [4, 10], [6, 9], [8, 12]
   ];
 
-  return [...new Set(opcoes.map(String))].slice(0, 4);
-}
-
-export function gerarQuestoesBloco5(quantidade = 30) {
-  const questoes = [];
-
   for (let i = 0; i < quantidade; i++) {
-    const tipo = i % 2 === 0 ? 'media' : 'moda';
-    const valores = [randint(2, 20), randint(2, 20), randint(2, 20), randint(2, 20), randint(2, 20)];
+    const [a, b] = pares[i % pares.length];
+    const res = mmc(a, b);
+    const errado1 = res * 2;
+    const errado2 = mdc(a, b);
+    const errado3 = a * b;
 
-    if (tipo === 'media') {
-      const resposta = media(valores);
-      let botoes = distratoresNumero(resposta);
-      while (botoes.length < 4) botoes.push(String(Number(resposta + botoes.length + 0.5).toFixed(1)));
+    const botoes = [...new Set([
+      String(res), String(errado1), String(errado2), String(errado3 !== res ? errado3 : errado1 + 1)
+    ])].slice(0, 4);
 
-      questoes.push({
-        id: `B5G${String(i + 1).padStart(3, '0')}`,
-        t: 5,
-        tipo: 'aritmetica',
-        bncc: 'EF07MA36',
-        bncc_desc: 'Média Aritmética',
-        display: `Calcule a média de: ${valores.join(', ')}`,
-        botoes: botoes.slice(0, 4),
-        res: String(resposta),
-        passo: `Somamos os valores e dividimos por 5. Média = ${resposta}.`,
-        dica: 'Média = soma dos dados ÷ quantidade de dados.'
-      });
-    } else {
-      const dados = [...valores, valores[randint(0, valores.length - 1)]];
-      const resposta = moda(dados);
-      let botoes = [...new Set([resposta, resposta + 1, resposta - 1, resposta + 2].map(String))];
-      while (botoes.length < 4) botoes.push(String(randint(1, 25)));
-
-      questoes.push({
-        id: `B5G${String(i + 1).padStart(3, '0')}`,
-        t: 5,
-        tipo: 'aritmetica',
-        bncc: 'EF07MA37',
-        bncc_desc: 'Moda e Leitura de Dados',
-        display: `Qual é a MODA dos dados: ${dados.join(', ')}?`,
-        botoes: botoes.slice(0, 4),
-        res: String(resposta),
-        passo: `A moda é o valor que mais se repete. Aqui, ${resposta}.`,
-        dica: 'Conte qual número aparece mais vezes.'
-      });
-    }
+    questoes.push({
+      id: `B5G${String(i + 1).padStart(3, '0')}`,
+      t: 5,
+      tipo: 'aritmetica',
+      bncc: 'EF06MA05',
+      bncc_desc: 'MMC',
+      display: `Qual é o MMC de ${a} e ${b}?`,
+      botoes,
+      res: String(res),
+      passo: `O menor múltiplo comum de ${a} e ${b} é ${res}.`,
+      dica: 'Liste os múltiplos de cada número e encontre o menor que aparece nos dois.'
+    });
   }
 
   return questoes;
 }
 
-export const bloco5 = gerarQuestoesBloco5(30);
+export const bloco5 = [...trilha6, ...gerarQuestoesBloco5(10)];

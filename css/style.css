@@ -211,3 +211,17 @@ codex/check-project-functionality-and-structure
 .diag-box strong{color:var(--neon-yellow);}
  main
  main
+
+/* ======================================
+   BUZZER - Destaque visual ao acionar
+====================================== */
+.buzzer-ativo {
+    animation: buzzer-flash 0.5s ease-in-out 3;
+    outline: 3px solid var(--neon-cyan);
+}
+
+@keyframes buzzer-flash {
+    0%   { box-shadow: 0 0 0 rgba(0, 229, 255, 0); }
+    50%  { box-shadow: 0 0 20px 8px rgba(0, 229, 255, 0.8); }
+    100% { box-shadow: 0 0 0 rgba(0, 229, 255, 0); }
+}
