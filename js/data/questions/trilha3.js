@@ -1,11 +1,10 @@
 /**
  * js/data/questions/trilha3.js
  * BLOCO 3: Multiplicação, Divisão e Potenciação de Inteiros
- * Total: 40 Questões
  */
 
 export const bloco3 = [
-    // === BLOCO 1: REGRA DE SINAIS - MULTIPLICAÇÃO E DIVISÃO (01 a 10) ===
+    // === BLOCO 1: REGRA DE SINAIS (01 a 10) ===
     {
         id: "T3Q01", t: 3, tipo: "sinais", bncc: "EF07MA04", bncc_desc: "Multiplicação de Inteiros",
         display: "(-5) × (-3) = ?", 
@@ -50,7 +49,7 @@ export const bloco3 = [
     },
     {
         id: "T3Q07", t: 3, tipo: "sinais", bncc: "EF07MA04", bncc_desc: "Regra de Sinais",
-        display: "Qual multiplicação resulta em um número POSITIVO?", 
+        display: "Qual multiplicação resulta em POSITIVO?", 
         botoes: ["(-2) x (-4)", "3 x (-5)", "(-8) x 1", "0 x (-6)"], res: "(-2) x (-4)", 
         passo: "Apenas a multiplicação de dois sinais iguais resulta em positivo.", 
         dica: "Procure sinais iguais."
@@ -221,7 +220,7 @@ export const bloco3 = [
         dica: "Olhe o expoente."
     },
 
-    // === QUESTÕES EXTRAS: MULTIPLICAÇÃO E DIVISÃO (31 a 40) ===
+    // === BLOCO 4: QUESTÕES FINAIS (31 a 40) ===
     {
         id: "T3Q31", t: 3, tipo: "aritmetica", bncc: "EF07MA04", bncc_desc: "Multiplicação",
         display: "(−6) × (−6) = ?",
