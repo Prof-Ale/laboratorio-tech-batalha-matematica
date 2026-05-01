@@ -1,81 +1,133 @@
+/**
+ * js/main.js - Orquestrador Geral v6.0
+ * Batalha Matemática: 7ºA vs 7ºB (Edição Dia da Matemática 2026)
+ */
+
 import { G, salvarProgresso } from './engine/gameState.js';
 import { selQ } from './engine/selector.js';
 import { renderHUD, falarAda, mostrarModal, atualizarAvatar, tocarSFX, toggleMusica, toggleVoz } from './ui-manager.js';
 
-let scoreA = 0, scoreB = 0, turno = 'A', modoBuzzer = false, perguntasVistas = new Set();
+// Variáveis de Controle da Arena
+let scoreA = 0, scoreB = 0;
+let turnoAtual = 'A';
+let modoBuzzer = false;
+let historicoGlobal = new Set(); // BLOQUEIO ABSOLUTO DE REPETIÇÃO
 
-// Exposição Global para botões HTML
+/** 
+ * 1. PROTOCOLO DE ACESSO (Splash Screen)
+ */
 window.mostrarSeletorBlocos = () => {
-    const nome = document.getElementById('nome-cientista').value;
-    if (!nome) return alert("Cientista, identifique-se!");
-    G.nome = nome;
+    const nomeInput = document.getElementById('nome-cientista');
+    if (!nomeInput.value.trim()) {
+        alert("Identifique-se, Cientista Master!");
+        return;
+    }
+    G.nome = nomeInput.value.toUpperCase();
+    
     document.getElementById('splash-screen').classList.add('hidden');
     document.getElementById('block-selector').classList.remove('hidden');
+    tocarSFX('sfx_start');
+    salvarProgresso();
 };
 
+/** 
+ * 2. CARREGAMENTO DE BLOCO (1 a 5)
+ */
 window.iniciarBloco = (id) => {
     G.blocoAtivo = id;
-    perguntasVistas.clear();
+    // Reseta o placar da batalha para o novo bloco
+    scoreA = 0; scoreB = 0; 
+    atualizarPlacarVisual();
+    
     document.getElementById('block-selector').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
+    
+    if (G.musica) document.getElementById('bgm').play().catch(() => {});
     proximaQ();
 };
 
+/** 
+ * 3. MOTOR DE SORTEIO SEM REPETIÇÃO
+ */
 window.proximaQ = () => {
     let q = selQ(G.blocoAtivo);
     
-    // Filtro Anti-Repetição (Busca questão nova no banco rico)
+    // Busca exaustiva: se a questão já saiu, força o seletor a buscar outra do "Rico Banco"
     let tentativas = 0;
-    while (perguntasVistas.has(q.id) && tentativas < 50) {
+    while (historicoGlobal.has(q.id) && tentativas < 100) {
         q = selQ(G.blocoAtivo);
         tentativas++;
     }
     
-    perguntasVistas.add(q.id);
+    historicoGlobal.add(q.id);
     G.questaoAtual = q;
     G.respondeu = false;
     
+    // Atualiza a Interface
     document.getElementById('conta-display').innerText = q.display;
-    gerarBotoes(q.botoes);
-    renderHUD(null);
+    gerarBotoesResposta(q.botoes);
+    renderHUD(null); // Limpa feedbacks anteriores
+    
     if (G.voz) falarAda(q.dica);
 };
 
-function gerarBotoes(opcoes) {
+function gerarBotoesResposta(opcoes) {
     const container = document.getElementById('grid-botoes');
     container.innerHTML = '';
     opcoes.forEach(opt => {
         const btn = document.createElement('button');
-        btn.className = 'ba';
+        btn.className = 'ba'; // Botão Acessível (DUA)
         btn.innerText = opt;
-        btn.onclick = () => verificar(opt);
+        btn.onclick = () => verificarAcao(opt);
         container.appendChild(btn);
     });
 }
 
-window.verificar = (escolha) => {
+/** 
+ * 4. LÓGICA DE BATALHA E PONTUAÇÃO
+ */
+window.verificarAcao = (escolha) => {
     if (G.respondeu) return;
     G.respondeu = true;
-    const acerto = String(escolha) === String(G.questaoAtual.res);
-    
+
+    const q = G.questaoAtual;
+    const acerto = String(escolha) === String(q.res);
+
     if (acerto) {
-        if (turno === 'A') scoreA += 10; else scoreB += 10;
+        tocarSFX('sfx_correct');
+        let pts = 10 + (G.combo * 5); // Bónus de Combo
+        if (turnoAtual === 'A') scoreA += pts; else scoreB += pts;
         G.combo++;
         atualizarAvatar('ok');
-        tocarSFX('sfx_correct');
     } else {
+        tocarSFX('sfx_wrong');
         G.combo = 0;
         atualizarAvatar('no');
-        tocarSFX('sfx_wrong');
+        // No modo alternado, o erro passa a vez para o outro time
+        if (!modoBuzzer) turnoAtual = (turnoAtual === 'A') ? 'B' : 'A';
     }
 
-    if (!modoBuzzer) turno = (turno === 'A') ? 'B' : 'A';
+    renderHUD(acerto, q.passo);
+    atualizarPlacarVisual();
     
-    renderHUD(acerto, G.questaoAtual.passo);
-    document.getElementById('scoreA').innerText = scoreA;
-    document.getElementById('scoreB').innerText = scoreB;
-    
-    if (scoreA >= 100 || scoreB >= 100) finalizarBloco();
+    // Verificação de Vitória do Bloco (Meta 100 pontos)
+    if (scoreA >= 100 || scoreB >= 100) {
+        setTimeout(() => finalizarBatalhaBloco(), 1500);
+    }
+};
+
+/** 
+ * 5. NAVEGAÇÃO E SISTEMAS
+ */
+function finalizarBatalhaBloco() {
+    const vencedor = scoreA >= 100 ? "7º ANO A" : "7º ANO B";
+    alert(`🏆 VITÓRIA! O ${vencedor} DOMINOU O BLOCO ${G.blocoAtivo}!`);
+    irParaSeletor();
+}
+
+window.irParaSeletor = () => {
+    document.getElementById('game-screen').classList.add('hidden');
+    document.getElementById('block-selector').classList.remove('hidden');
 };
 
 window.toggleBuzzerMode = () => {
@@ -83,12 +135,18 @@ window.toggleBuzzerMode = () => {
     document.getElementById('btn-buzzer-mode').innerText = modoBuzzer ? "MODO: BUZZER" : "MODO: ALTERNADO";
 };
 
-window.irParaSeletor = () => {
-    document.getElementById('game-screen').classList.add('hidden');
-    document.getElementById('block-selector').classList.remove('hidden');
-};
+function atualizarPlacarVisual() {
+    document.getElementById('scoreA').innerText = scoreA;
+    document.getElementById('scoreB').innerText = scoreB;
+    document.getElementById('tcb').innerText = G.combo;
+    
+    // Feedback visual de quem joga agora (DUA)
+    document.getElementById('box-a').classList.toggle('ativo', turnoAtual === 'A');
+    document.getElementById('box-b').classList.toggle('ativo', turnoAtual === 'B');
+}
 
-// Vinculação de funções de áudio do ui-manager
+// Vinculação de funções globais para o HTML
 window.toggleMusica = toggleMusica;
 window.toggleVoz = toggleVoz;
 window.abrirM = abrirM;
+window.fecharM = fecharM;
