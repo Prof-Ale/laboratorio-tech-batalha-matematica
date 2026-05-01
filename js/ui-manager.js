@@ -1,7 +1,7 @@
 /**
- * ui-manager.js (v4.0 - Arena Edition)
- * Especialista: Gestão de Interface, Áudio DUA e Análise Pedagógica.
- * Foco: Batalha Matemática 7º Ano - IFSP / Milton de Tolosa.
+ * ui-manager.js (v6.0 - Master Arena Edition)
+ * Especialista: Gestão de Interface, Acessibilidade DUA e Dashboard Clínico.
+ * Integrado para o evento "Dia da Matemática 2026" - Milton de Tolosa / IFSP.
  */
 
 import { G, salvarProgresso } from './engine/gameState.js';
@@ -10,75 +10,76 @@ const bgm = document.getElementById("bgm");
 
 /* ========================================================
    SISTEMA DE ÁUDIO E VOZ (DUA)
+   Múltiplas formas de Representação e Engajamento
 ======================================================== */
 
-// Pré-carregamento de vozes para o navegador
+// Pré-carregamento de vozes pt-BR
 if (typeof window !== 'undefined' && window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 }
 
 /**
- * Narra dicas e feedbacks (Múltiplas formas de Representação)
+ * Narra dicas e feedbacks (Essencial para Dislexia e TEA)
  */
 export function falarAda(texto) {
     try {
         if (!G.voz || !window.speechSynthesis) return;
 
-        window.speechSynthesis.cancel(); // Interrompe fala anterior
+        window.speechSynthesis.cancel(); 
 
         const u = new SpeechSynthesisUtterance(texto.replace(/<[^>]*>?/gm, ''));
         const vozes = window.speechSynthesis.getVoices();
         
-        // Preferência por vozes pt-BR naturais
+        // Busca voz pt-BR (Preferência masculina conforme perfil Prof. Alê ou Ada)
         const vozBR = vozes.find(v => v.lang.includes('pt-BR')) || vozes[0];
         
         u.voice = vozBR;
-        u.rate = 1.0;
+        u.rate = 0.95;
         u.pitch = 1.0;
 
-        // Ducking: Abaixa a música para a voz ser ouvida
+        // Efeito de Ducking: Diminui a música durante a narração
         u.onstart = () => { if (bgm && G.musica) bgm.volume = 0.02; };
         u.onend   = () => { if (bgm && G.musica) bgm.volume = 0.07; };
 
         window.speechSynthesis.speak(u);
     } catch (e) {
-        console.warn("Falha no TTS:", e);
+        console.warn("Falha no motor de voz:", e);
     }
 }
 
 /**
- * Executa efeitos sonoros curtos (SFX)
+ * Gatilho de Efeitos Sonoros (SFX)
  */
 export function tocarSFX(tipo) {
     const sfx = new Audio(`./assets/audio/${tipo}.mp3`);
     sfx.volume = 0.4;
-    sfx.play().catch(() => {}); // Ignora se o navegador bloquear
+    sfx.play().catch(() => {}); 
 }
 
 /* ========================================================
-   CONTROLES DE INTERFACE E HUD
+   CONTROLES DE INTERFACE E HUD (Ação e Expressão)
 ======================================================== */
 
+/**
+ * Renderiza o estado atual da Arena e Feedback
+ */
 export function renderHUD(acerto = null, passo = "") {
     const feedbackEl = document.getElementById("fb");
-    const gridBotoes = document.getElementById("grid-botoes");
-
-    // HUD Elements
+    
+    // Atualiza contadores globais no HUD
     document.getElementById("tcb").textContent = G.combo;
     document.getElementById("tnv").textContent = G.nivel;
-    document.getElementById("fen").style.width = `${G.energia}%`;
-    document.getElementById("fv").style.width  = `${G.vida}%`;
 
     if (acerto !== null) {
+        // Feedback Colorido e Textual (DUA)
         feedbackEl.innerHTML = acerto 
-            ? `<span style="color:var(--neon-green)">✔️ CORRETO!</span> <br> <small>${passo}</small>`
-            : `<span style="color:var(--neon-red)">❌ TENTE NOVAMENTE!</span> <br> <small>${passo}</small>`;
+            ? `<div style="color:var(--neon-green); font-weight:900;">✔️ SISTEMA INTEGRADO: ACERTO!</div><div style="font-size:0.9rem;">${passo}</div>`
+            : `<div style="color:var(--neon-red); font-weight:900;">❌ FALHA NA LÓGICA: REVISE!</div><div style="font-size:0.9rem;">${passo}</div>`;
         
-        // Trava os botões após responder
+        // Bloqueia cliques duplos (Inclusão: evita ansiedade)
         const botoes = document.querySelectorAll(".ba");
         botoes.forEach(b => b.classList.add("dis"));
         
-        // Mostra o botão de Próxima
         document.getElementById("btn-prox").classList.remove("hidden");
     } else {
         feedbackEl.innerHTML = "";
@@ -86,12 +87,40 @@ export function renderHUD(acerto = null, passo = "") {
     }
 }
 
+/**
+ * Alterna a música de fundo
+ */
+export function toggleMusica() {
+    G.musica = !G.musica;
+    const el = document.getElementById("tsom");
+    if (el) el.textContent = G.musica ? "ON" : "OFF";
+
+    if (G.musica && bgm) {
+        bgm.volume = 0.07;
+        bgm.play().catch(() => {});
+    } else if (bgm) {
+        bgm.pause();
+    }
+}
+
+/**
+ * Alterna o sintetizador de voz
+ */
+export function toggleVoz() {
+    G.voz = !G.voz;
+    const el = document.getElementById("tvoz");
+    if (el) el.textContent = G.voz ? "ON" : "OFF";
+    if (!G.voz) window.speechSynthesis.cancel();
+}
+
+/**
+ * Orquestra as reações do Avatar (Vídeo MP4)
+ */
 export function atualizarAvatar(status) {
     const img = document.getElementById("av-img");
     const vidOk = document.getElementById("vid-ok");
     const vidNo = document.getElementById("vid-no");
 
-    // Esconde tudo e mostra o vídeo correspondente
     [img, vidOk, vidNo].forEach(el => el.classList.add("avh"));
 
     const target = status === 'ok' ? vidOk : vidNo;
@@ -106,49 +135,57 @@ export function atualizarAvatar(status) {
 }
 
 /* ========================================================
-   DASHBOARD CLÍNICO (ANÁLISE DE BARREIRAS)
+   DASHBOARD BNCC: ANÁLISE CLÍNICA DE BARREIRAS
 ======================================================== */
 
 export function mostrarModal(id, status) {
     const modal = document.getElementById(id);
     if (status) {
         modal.classList.add("show");
-        if (id === 'mdash') gerarRelatorioClinico();
+        if (id === 'mdash') gerarDashboardClinico();
     } else {
         modal.classList.remove("show");
     }
 }
 
-function gerarRelatorioClinico() {
+function gerarDashboardClinico() {
     const container = document.getElementById("dash-content");
     container.innerHTML = "";
 
     if (Object.keys(G.historico).length === 0) {
-        container.innerHTML = "<p>Sem dados para análise ainda.</p>";
+        container.innerHTML = "<p style='text-align:center;'>Nenhum dado coletado. Inicie a batalha!</p>";
         return;
     }
 
     for (let hab in G.historico) {
         const h = G.historico[hab];
         const total = h.acertos + h.erros_sinal + h.erros_calculo;
+        if (total === 0) continue;
+
         const txAcerto = Math.round((h.acertos / total) * 100);
 
-        let insightPedagogico = "";
+        // Lógica Pedagógica de Identificação de Barreiras
+        let alerta = "";
         if (h.erros_sinal > h.erros_calculo) {
-            insightPedagogico = "<b>Dica:</b> Focar em atividades de reta numérica (conceito de direção).";
+            alerta = `<div class="alerta">⚠️ <b>Barreira de Sinal:</b> O aluno domina a conta, mas falha na regra de sinais.</div>`;
         } else if (h.erros_calculo > h.erros_sinal) {
-            insightPedagogico = "<b>Dica:</b> Necessário reforço em algoritmos de tabuada e cálculo mental.";
+            alerta = `<div class="alerta" style="border-color:var(--neon-red)">🚨 <b>Barreira de Cálculo:</b> O conceito está claro, mas a aritmética básica precisa de reforço.</div>`;
+        } else if (txAcerto >= 75) {
+            alerta = `<div class="alerta" style="border-color:var(--neon-green)">🌟 <b>Proficiência:</b> Pronto para novos desafios algébricos!</div>`;
         }
 
         container.innerHTML += `
             <div class="dash-card">
-                <h3>${hab} - ${txAcerto}%</h3>
-                <p>${h.desc || ""}</p>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:var(--choco-gold)">${hab}</strong>
+                    <span>${txAcerto}%</span>
+                </div>
+                <div style="font-size:0.8rem; margin:5px 0;">${h.desc || ""}</div>
                 <div class="dash-bar">
                     <div class="dash-fill-ok" style="width:${txAcerto}%"></div>
-                    <div class="dash-fill-no" style="width:${100-txAcerto}%"></div>
+                    <div class="dash-fill-no" style="width:${100 - txAcerto}%"></div>
                 </div>
-                <small>${insightPedagogico}</small>
+                ${alerta}
             </div>
         `;
     }
