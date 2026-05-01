@@ -3,294 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laboratório Tech - Batalha Matemática v2.0</title>
+    <title>Laboratório Tech - Arena Batalha v6.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --neon-blue: #00f3ff;
-            --neon-pink: #ff00ff;
-            --neon-green: #39ff14;
-            --neon-red: #ff3131;
-            --bg-dark: #0a0a12;
-            --panel-bg: #16213e;
-        }
-
-        body {
-            background: var(--bg-dark);
-            color: white;
-            font-family: 'Nunito', sans-serif;
-            margin: 0;
-            overflow-x: hidden;
-        }
-
-        .screen { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-        .hidden { display: none !important; }
-
-        /* HEADER E PLACAR */
-        .scoreboard {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            background: var(--panel-bg);
-            width: 100%;
-            padding: 15px 0;
-            border-bottom: 4px solid var(--neon-blue);
-            position: fixed;
-            top: 0;
-            z-index: 100;
-        }
-
-        .team-card {
-            padding: 10px 25px;
-            border-radius: 15px;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-            text-align: center;
-            min-width: 150px;
-        }
-
-        .team-card.active {
-            border-color: var(--neon-green);
-            box-shadow: 0 0 20px var(--neon-green);
-            transform: scale(1.1);
-        }
-
-        .team-a { background: #880000; }
-        .team-b { background: #000088; }
-
-        .score-val { font-family: 'Orbitron', sans-serif; font-size: 3.5rem; display: block; margin: 5px 0; }
-        .combo-badge { font-size: 0.9rem; font-weight: 900; color: var(--neon-green); text-transform: uppercase; }
-
-        /* ARENA DE JOGO */
-        #game-arena { margin-top: 140px; width: 100%; max-width: 900px; }
-        
-        .block-header {
-            color: var(--neon-pink);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 5px var(--neon-pink);
-        }
-
-        .question-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 40px;
-            border-radius: 20px;
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            margin-bottom: 30px;
-        }
-
-        #question-text { font-size: 3rem; font-weight: 900; margin: 0; }
-
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            width: 100%;
-        }
-
-        .btn-opt {
-            background: #2a2a40;
-            color: white;
-            border: 2px solid var(--neon-blue);
-            padding: 25px;
-            font-size: 2rem;
-            font-weight: 900;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .btn-opt:hover {
-            background: var(--neon-blue);
-            color: black;
-            box-shadow: 0 0 20px var(--neon-blue);
-        }
-
-        /* DUA - Dica e Acessibilidade */
-        #dica-box {
-            margin-top: 30px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-left: 5px solid var(--neon-blue);
-            font-style: italic;
-            font-size: 1.3rem;
-            width: 100%;
-            text-align: left;
-        }
-
-        /* FEEDBACK E TELAS FINAIS */
-        .feedback-overlay { font-size: 3rem; font-weight: 900; margin-top: 20px; height: 60px; }
-
-        .btn-start {
-            background: var(--neon-green);
-            color: black;
-            padding: 25px 60px;
-            font-size: 1.8rem;
-            font-weight: 900;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 0 15px var(--neon-green);
-            transition: 0.3s;
-        }
-
-        .btn-start:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--neon-green); }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- TELA INICIAL -->
+<!-- TELA 1: SPLASH SCREEN MASTER -->
 <section id="splash-screen" class="screen">
-    <div style="text-shadow: 0 0 20px var(--neon-blue); font-family: 'Orbitron', sans-serif; font-size: 4rem; color: var(--neon-blue);">LABORATÓRIO TECH</div>
-    <h2 style="font-size: 2rem; margin: 20px 0 40px 0;">ARENA DE BATALHA: 7ºA vs 7ºB</h2>
-    
-    <div style="background: var(--panel-bg); padding: 30px; border-radius: 20px; border: 1px solid var(--neon-blue);">
-        <input type="text" id="prof-name" placeholder="NOME DO MEDIADOR (PROFESSOR)" 
-               style="padding: 15px; font-size: 1.2rem; width: 350px; border-radius: 10px; border: none; text-align: center;">
+    <div class="splash-inner">
+        <div class="splash-logo">LABORATÓRIO TECH</div>
+        <div class="splash-sub">SISTEMA DE BATALHA MATEMÁTICA v6.0</div>
+        
+        <div class="splash-av">
+            <img src="assets/img/avatar_estatico.png" alt="Mestre Alê">
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="nome-cientista" placeholder="IDENTIFIQUE-SE, CIENTISTA MASTER" autocomplete="off">
+            <button class="btn-start-neon" onclick="mostrarSeletorBlocos()">ACESSAR SISTEMAS</button>
+        </div>
+        <div class="splash-sig">Prof. Alessandro Barbosa • MathLab • 2026</div>
     </div>
-    
-    <button class="btn-start" style="margin-top: 40px;" onclick="iniciarJogo()">INICIAR PROTOCOLO ⚔️</button>
 </section>
 
-<!-- TELA DO JOGO -->
+<!-- TELA 2: SELETOR DE BLOCOS (5 BLOCOS) -->
+<section id="block-selector" class="screen hidden">
+    <h2 class="section-title">CENTRAL DE MANUTENÇÃO</h2>
+    <p class="section-desc">Selecione o setor de recomposição de aprendizagem</p>
+    
+    <div class="block-grid">
+        <button class="block-card" onclick="iniciarBloco(1)">
+            <span class="block-icon">🔢</span>
+            <span class="block-name">Bloco 1</span>
+            <small>Inteiros: Soma/Sub</small>
+        </button>
+        <button class="block-card" onclick="iniciarBloco(2)">
+            <span class="block-icon">⚖️</span>
+            <span class="block-name">Bloco 2</span>
+            <small>Múltiplos e Divisores</small>
+        </button>
+        <button class="block-card" onclick="iniciarBloco(3)">
+            <span class="block-icon">📏</span>
+            <span class="block-name">Bloco 3</span>
+            <small>Inteiros: Mult/Div</small>
+        </button>
+        <button class="block-card" onclick="iniciarBloco(4)">
+            <span class="block-icon">🧩</span>
+            <span class="block-name">Bloco 4</span>
+            <small>Frações e Decimais</small>
+        </button>
+        <button class="block-card" onclick="iniciarBloco(5)">
+            <span class="block-icon">📊</span>
+            <span class="block-name">Bloco 5</span>
+            <small>MMC e MDC</small>
+        </button>
+    </div>
+</section>
+
+<!-- TELA 3: ARENA DE JOGO -->
 <section id="game-screen" class="screen hidden">
-    <div class="scoreboard">
-        <div id="box-a" class="team-card team-a active">
-            <span style="font-weight: 900;">7º ANO A</span>
-            <span id="pts-a" class="score-val">0</span>
-            <div id="combo-a" class="combo-badge">Combo x1</div>
+    <div class="scoreboard-battle">
+        <div id="box-a" class="team-box team-a">
+            7ºA <span id="scoreA">0</span>
         </div>
-
-        <div style="text-align: center;">
-            <div id="round-info" style="color: var(--neon-green); font-family: 'Orbitron';">RODADA 1</div>
-            <div id="turn-msg" style="font-size: 1.5rem; font-weight: 900; margin-top: 10px;">VEZ DO 7ºA</div>
+        <div class="battle-center">
+            <button id="btn-buzzer-mode" onclick="toggleBuzzerMode()">MODO: ALTERNADO</button>
         </div>
-
-        <div id="box-b" class="team-card team-b">
-            <span style="font-weight: 900;">7º ANO B</span>
-            <span id="pts-b" class="score-val">0</span>
-            <div id="combo-b" class="combo-badge">Combo x1</div>
+        <div id="box-b" class="team-box team-b">
+            7ºB <span id="scoreB">0</span>
         </div>
     </div>
 
-    <div id="game-arena">
-        <div id="bloco-label" class="block-header">[ BLOCO 1: INTEIROS ]</div>
-        <div class="question-card">
-            <p id="question-text"></p>
+    <!-- CONTROLES DE MÍDIA SOLICITADOS -->
+    <div class="media-controls">
+        <button onclick="toggleMusica()">🎵 <span id="tsom">ON</span></button>
+        <button onclick="toggleVoz()">🔊 <span id="tvoz">ON</span></button>
+        <button onclick="irParaSeletor()">⚙️ BLOCOS</button>
+    </div>
+
+    <div class="gw">
+        <div class="hud">
+            <div class="hi"><div class="hl">Combo</div><div class="hv" id="tcb">0</div></div>
+            <div class="hi"><div class="hl">Nível</div><div class="hv" id="tnv">1</div></div>
         </div>
-        <div id="options-grid" class="options-grid"></div>
-        <div id="feedback" class="feedback-overlay"></div>
-        <div id="dica-box"></div>
+        <canvas id="canvas-game" width="580" height="130"></canvas>
+        <div id="conta-display">Carregando...</div>
+        <div id="grid-botoes" class="ag"></div>
+        <div id="fb"></div>
+        <button id="btn-prox" class="hidden" onclick="proximaQ()">PRÓXIMO DESAFIO →</button>
     </div>
 </section>
 
-<!-- TELA DE VITÓRIA -->
-<section id="win-screen" class="screen hidden">
-    <div style="font-family: 'Orbitron'; font-size: 5rem; color: var(--neon-green);" id="winner-name">7ºA VENCEU!</div>
-    <p style="font-size: 2.5rem; margin: 30px 0;">MISSÃO CUMPRIDA, CIENTISTAS!</p>
-    <button class="btn-start" onclick="location.reload()">REINICIAR SISTEMA</button>
-</section>
+<!-- MODAIS: DASHBOARD E CRÉDITOS -->
+<div class="btn-top-group">
+    <button class="btn-round" onclick="abrirM('mdash')">📊</button>
+    <button class="btn-round" onclick="abrirM('mcred')">i</button>
+</div>
 
-<script>
-const banco = [
-    { q: "(-15) + 20 = ?", opts: [5, -5, 35, -35], res: 5, dica: "Lembre-se: sinais diferentes, subtraímos e mantemos o sinal do maior valor absoluto.", bncc: "EF07MA03", bloco: "Inteiros" },
-    { q: "Qual o simétrico de -12?", opts: [0, 12, -12, 1], res: 12, dica: "O simétrico (ou oposto) está à mesma distância do zero, mas do lado contrário.", bncc: "EF07MA03", bloco: "Inteiros" },
-    { q: "3/5 de 50 é?", opts: [10, 20, 30, 40], res: 30, dica: "Divida o total pelo denominador (5) e multiplique pelo numerador (3).", bncc: "EF07MA06", bloco: "Frações" },
-    { q: "Se 3x = 21, qual o valor de x?", opts: [3, 7, 18, 63], res: 7, dica: "O 3 está multiplicando, ele deve passar para o outro lado dividindo.", bncc: "EF07MA14", bloco: "Álgebra" },
-    { q: "Qual o MMC de 4 e 6?", opts: [2, 10, 12, 24], res: 12, dica: "O MMC é o menor múltiplo que aparece nas duas tabuadas ao mesmo tempo.", bncc: "EF07MA01", bloco: "Múltiplos" },
-    { q: "(-8) x (-3) = ?", opts: [24, -24, 11, -11], res: 24, dica: "Regra de sinais: na multiplicação, sinais iguais resultam em positivo.", bncc: "EF07MA03", bloco: "Inteiros" }
-];
-
-let state = {
-    ptsA: 0, ptsB: 0, comboA: 0, comboB: 0,
-    turno: 'A', qIndex: 0, rodada: 1
-};
-
-function iniciarJogo() {
-    document.getElementById('splash-screen').classList.add('hidden');
-    document.getElementById('game-screen').classList.remove('hidden');
-    carregarQuestao();
-}
-
-function carregarQuestao() {
-    const q = banco[state.qIndex];
-    document.getElementById('question-text').innerText = q.q;
-    document.getElementById('bloco-label').innerText = `[ ${q.bloco.toUpperCase()} | BNCC: ${q.bncc} ]`;
-    document.getElementById('dica-box').innerText = `💡 DUA: ${q.dica}`;
-    document.getElementById('feedback').innerText = "";
-    
-    const grid = document.getElementById('options-grid');
-    grid.innerHTML = '';
-    
-    q.opts.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.className = 'btn-opt';
-        btn.innerText = opt;
-        btn.onclick = () => verificar(opt);
-        grid.appendChild(btn);
-    });
-    atualizarInterface();
-}
-
-function verificar(escolha) {
-    const q = banco[state.qIndex];
-    const acerto = escolha === q.res;
-    const fb = document.getElementById('feedback');
-
-    if (acerto) {
-        fb.innerText = "SISTEMA INTEGRADO: ACERTO! ✅";
-        fb.style.color = "var(--neon-green)";
-        processarPonto();
-    } else {
-        fb.innerText = "ALERTA: FALHA NO CÁLCULO! ❌";
-        fb.style.color = "var(--neon-red)";
-        resetCombo();
-    }
-
-    setTimeout(() => {
-        state.turno = (state.turno === 'A') ? 'B' : 'A';
-        state.qIndex = (state.qIndex + 1) % banco.length;
-        state.rodada++;
-        if (state.ptsA >= 100 || state.ptsB >= 100) finalizar();
-        else carregarQuestao();
-    }, 2000);
-}
-
-function processarPonto() {
-    let multiplicador = state.turno === 'A' ? ++state.comboA : ++state.comboB;
-    let ptsBase = 10;
-    let bonus = multiplicador > 1 ? multiplicador * 5 : 0;
-    
-    if (state.turno === 'A') state.ptsA += (ptsBase + bonus);
-    else state.ptsB += (ptsBase + bonus);
-}
-
-function resetCombo() {
-    if (state.turno === 'A') state.comboA = 0;
-    else state.comboB = 0;
-}
-
-function atualizarInterface() {
-    document.getElementById('pts-a').innerText = state.ptsA;
-    document.getElementById('pts-b').innerText = state.ptsB;
-    document.getElementById('combo-a').innerText = `Combo x${state.comboA + 1}`;
-    document.getElementById('combo-b').innerText = `Combo x${state.comboB + 1}`;
-    document.getElementById('box-a').className = `team-card team-a ${state.turno === 'A' ? 'active' : ''}`;
-    document.getElementById('box-b').className = `team-card team-b ${state.turno === 'B' ? 'active' : ''}`;
-    document.getElementById('turn-msg').innerText = `VEZ DO 7º${state.turno}`;
-    document.getElementById('round-info').innerText = `RODADA ${state.rodada}`;
-}
-
-function finalizar() {
-    document.getElementById('game-screen').classList.add('hidden');
-    document.getElementById('win-screen').classList.remove('hidden');
-    document.getElementById('winner-name').innerText = state.ptsA >= 100 ? "7ºA VENCEU!" : "7ºB VENCEU!";
-}
-</script>
+<audio id="bgm" loop src="assets/audio/bgm_base.mp3"></audio>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
