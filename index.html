@@ -1,191 +1,199 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-    <title>Arena Matemática • 7ºA vs 7ºB</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet"/>
-    <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratório Tech - Batalha Matemática</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14;
+            --bg-dark: #0a0a12; --panel-bg: #16213e;
+        }
+        body {
+            background: var(--bg-dark); color: white; font-family: 'Nunito', sans-serif;
+            margin: 0; text-align: center; overflow-x: hidden;
+        }
+        .screen { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 20px; }
+        .hidden { display: none !important; }
+
+        /* Placar de Batalha */
+        .scoreboard {
+            display: flex; justify-content: space-around; background: var(--panel-bg);
+            padding: 20px; border-bottom: 4px solid var(--neon-blue); position: sticky; top: 0;
+        }
+        .team { padding: 15px 30px; border-radius: 15px; border: 2px solid transparent; transition: 0.3s; }
+        .team.active { border-color: var(--neon-green); box-shadow: 0 0 20px var(--neon-green); transform: scale(1.05); }
+        .team-a { background: #b30000; }
+        .team-b { background: #0000b3; }
+        .score { font-family: 'Orbitron', sans-serif; font-size: 3rem; display: block; }
+
+        /* Área de Questões */
+        #question-box { margin-top: 40px; }
+        .question-text { font-size: 2.5rem; margin-bottom: 30px; min-height: 100px; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 800px; margin: auto; }
+        
+        /* Botões DUA (Grandes e Acessíveis) */
+        .btn-opt {
+            background: #2a2a40; color: white; border: 2px solid var(--neon-blue);
+            padding: 25px; font-size: 1.8rem; border-radius: 12px; cursor: pointer; transition: 0.2s;
+        }
+        .btn-opt:hover { background: var(--neon-blue); color: black; box-shadow: 0 0 15px var(--neon-blue); }
+
+        /* Splash e Seletor */
+        .splash-logo { font-family: 'Orbitron', sans-serif; font-size: 3.5rem; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
+        .btn-start { background: var(--neon-green); color: black; padding: 20px 40px; font-size: 1.5rem; font-weight: 900; border: none; border-radius: 50px; cursor: pointer; margin-top: 30px; }
+        
+        #feedback { font-size: 2rem; font-weight: 900; margin-top: 20px; height: 40px; }
+        .win-screen { position: fixed; top: 0; background: var(--bg-dark); width: 100%; height: 100%; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    </style>
 </head>
 <body>
 
+<!-- TELA INICIAL -->
 <section id="splash-screen" class="screen">
-    <div class="splash-inner">
-        <div class="splash-logo">LABORATÓRIO TECH</div>
-        <div class="splash-sub">Recomposição de Aprendizagem &nbsp;•&nbsp; Matemática</div>
-        
-        <div class="splash-badges">
-            <span class="badge bg">BNCC</span>
-            <span class="badge bc">Inclusão</span>
-            <span class="badge bv">Gamificado</span>
-            <span class="badge br">DUA</span>
-        </div>
-
-        <div class="splash-av" aria-hidden="true">
-            <div class="ring"></div><div class="ring2"></div>
-            <img src="avatar_estatico.png" alt="Mestre Alê Chocolate">
-        </div>
-
-        <div class="splash-msg" id="spm" aria-live="polite">Sistema aguardando identificação...</div>
-        
-        <input type="text" id="nome-cientista" 
-               placeholder="Identifique-se, Cientista (Seu Nome)" 
-               aria-label="Introduza o seu nome" 
-               tabindex="0">
-        
-        <button class="btn-start" onclick="mostrarSeletorBlocos()" tabindex="0">ACESSAR SISTEMAS</button>
-        
-        <div class="splash-sig">Prof. Alessandro Barbosa &nbsp;•&nbsp; MathLab &nbsp;•&nbsp; 2026</div>
-    </div>
+    <div class="splash-logo">LABORATÓRIO TECH</div>
+    <h2>Batalha Matemática: 7ºA vs 7ºB</h2>
+    <input type="text" id="prof-name" placeholder="Nome do Mediador" style="padding: 10px; font-size: 1.2rem; width: 300px; margin: 20px auto; border-radius: 8px;">
+    <button class="btn-start" onclick="iniciarJogo()">INICIAR BATALHA ⚔️</button>
 </section>
 
-<section id="block-selector" class="screen hidden">
-    <div class="selector-inner">
-        <h2 class="section-title">Central de Manutenção</h2>
-        <p class="section-desc">Selecione o bloco — conteúdo do 1º bimestre (6º e 7º anos)</p>
-        
-        <div class="blocks-grid">
-            <button class="block-card b1" onclick="iniciarBloco(1)">
-                <span class="block-icon">🔢</span>
-                <span class="block-title">Bloco 1</span>
-                <span class="block-name">Inteiros: Soma</span>
-                <small>Adição e Subtração de Inteiros</small>
-            </button>
-
-            <button class="block-card b2" onclick="iniciarBloco(2)">
-                <span class="block-icon">⚖️</span>
-                <span class="block-title">Bloco 2</span>
-                <span class="block-name">Múltiplos e Divisores</span>
-                <small>Múltiplos, Divisores e Critérios</small>
-            </button>
-
-            <button class="block-card b3" onclick="iniciarBloco(3)">
-                <span class="block-icon">📏</span>
-                <span class="block-title">Bloco 3</span>
-                <span class="block-name">Inteiros: Multiplicação</span>
-                <small>Multiplicação e Divisão de Inteiros</small>
-            </button>
-
-            <button class="block-card b4" onclick="iniciarBloco(4)">
-                <span class="block-icon">🧩</span>
-                <span class="block-title">Bloco 4</span>
-                <span class="block-name">Frações</span>
-                <small>Frações, Decimais e Porcentagem</small>
-            </button>
-
-            <button class="block-card b5" onclick="iniciarBloco(5)">
-                <span class="block-icon">📊</span>
-                <span class="block-title">Bloco 5</span>
-                <span class="block-name">MMC e MDC</span>
-                <small>MMC e MDC</small>
-            </button>
-        </div>
-        
-        <button class="bc2" onclick="voltarAoSplash()" style="margin-top:20px;">← Voltar</button>
-    </div>
-</section>
-
+<!-- TELA DO JOGO -->
 <section id="game-screen" class="screen hidden">
-    <div class="gw">
-        <div class="top">
-            <div class="tc">
-                <div class="tp"></div>
-                <span id="label-bloco-ativo">Bloco Ativo</span>: <strong id="nome-bloco-display">-</strong>
-            </div>
-            <div style="display:flex;gap:6px">
-                <button class="bc2" onclick="toggleMusica()" aria-label="Música">🎵 <span id="tsom">ON</span></button>
-                <button class="bc2" onclick="toggleVoz()" aria-label="Voz da Ada">🔊 <span id="tvoz">ON</span></button>
-                <button class="bc2" onclick="irParaSeletor()" aria-label="Mudar Bloco">⚙️ Blocos</button>
-            </div>
+    <div class="scoreboard">
+        <div id="box-a" class="team team-a active">
+            <span style="font-size: 1.5rem; font-weight: 900;">7º ANO A</span>
+            <span id="pts-a" class="score">0</span>
+            <small id="combo-a">Combo: x1</small>
         </div>
-
-        <!-- NOVO PLACAR DA BATALHA -->
-        <div id="scoreboard-battle">
-            <div class="team-box team-a">
-                🏫 7ºA
-                <span id="scoreA">0</span>
-            </div>
-
-            <div class="battle-round">
-                ⚔️ BATALHA MATEMÁTICA<br>
-                <button id="btn-buzzer-mode" onclick="toggleBuzzerMode()" title="Alterna entre modo alternado e buzzer por teclado" style="margin-top:6px;font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid var(--neon-cyan);background:transparent;color:var(--neon-cyan);cursor:pointer;">🔄 Modo: Alternado</button>
-            </div>
-
-            <div class="team-box team-b">
-                🏫 7ºB
-                <span id="scoreB">0</span>
-            </div>
+        <div style="text-align: center;">
+            <div id="round-info" style="color: var(--neon-green); font-weight: bold;">RODADA 1</div>
+            <h2 id="turn-msg">VEZ DO 7ºA</h2>
         </div>
-
-        <div class="hud" aria-label="Status do jogador">
-            <div class="hi"><div class="hl">Vida</div><div class="bh"><div id="fv" class="bf" style="width:100%;background:var(--neon-red)"></div></div></div>
-            <div class="hi"><div class="hl">Energia</div><div class="bh"><div id="fen" class="bf" style="width:60%;background:var(--neon-green)"></div></div></div>
-            <div class="hi"><div class="hl">Combo</div><div class="hv" id="tcb">0</div></div>
-            <div class="hi"><div class="hl">Nível</div><div class="hv" id="tnv">1</div></div>
+        <div id="box-b" class="team team-b">
+            <span style="font-size: 1.5rem; font-weight: 900;">7º ANO B</span>
+            <span id="pts-b" class="score">0</span>
+            <small id="combo-b">Combo: x1</small>
         </div>
-        
-        <canvas id="canvas-game" width="580" height="130" aria-label="Representação visual do problema"></canvas>
-        
-        <div id="conta-display" aria-live="assertive">Carregando desafio...</div>
-        <div id="regra-box" aria-live="polite"></div>
-        
-        <div class="ag" id="grid-botoes" role="group" aria-label="Opções de resposta"></div>
-        
-        <div id="fb" aria-live="assertive"></div>
-        <div id="diag-status" class="diag-box" aria-live="polite"></div>
-        <button id="btn-prox" class="hidden" onclick="proximaQ()" tabindex="0">PRÓXIMO DESAFIO →</button>
+    </div>
+
+    <div id="question-box">
+        <div id="bloco-label" style="color: var(--neon-pink); font-weight: bold;">[ BLOCO 1: INTEIROS ]</div>
+        <div id="question-text" class="question-text">Quanto é (-5) + 8?</div>
+        <div id="options-grid" class="options-grid"></div>
+        <div id="feedback"></div>
+        <div id="dica-box" style="margin-top: 20px; color: #aaa; font-style: italic;"></div>
     </div>
 </section>
 
-<div id="av" class="hidden" aria-hidden="true">
-    <img id="av-img" src="avatar_estatico.png" alt="Prof. Alê">
-    <video id="vid-ok" class="avh" muted playsinline><source src="avatar_jump.mp4" type="video/mp4"></video>
-    <video id="vid-no" class="avh" muted playsinline><source src="avatar_chute.mp4" type="video/mp4"></video>
+<!-- TELA DE VITÓRIA -->
+<div id="win-screen" class="win-screen hidden">
+    <h1 id="winner-name" style="font-size: 5rem; color: var(--neon-green);">7ºA VENCEU!</h1>
+    <p style="font-size: 2rem;">🏆 Parabéns pela cooperação e raciocínio!</p>
+    <button class="btn-start" onclick="location.reload()">NOVA PARTIDA</button>
 </div>
 
-<div class="btn-top-group">
-    <button class="btn-round" onclick="verPerfilAluno()" title="Meu Perfil">👤</button>
-    <button class="btn-round" onclick="abrirM('mdash')" title="Dashboard BNCC">📊</button>
-    <button class="btn-round" onclick="abrirM('mcred')" title="Sobre o Projeto">i</button>
-</div>
+<script>
+// BANCO DE QUESTÕES (Exemplo dos Blocos 1 e 2)
+const banco = [
+    { q: "(-15) + 20 = ?", opts: [5, -5, 35, -35], res: 5, dica: "Pense em dívida e crédito.", bncc: "EF07MA03", bloco: "Inteiros" },
+    { q: "O oposto de -12 é?", opts: [0, 12, -12, 1], res: 12, dica: "O oposto é o inverso do sinal.", bncc: "EF07MA03", bloco: "Inteiros" },
+    { q: "3/4 de 40 é?", opts: [10, 20, 30, 40], res: 30, dica: "Divida por 4 e multiplique por 3.", bncc: "EF07MA06", bloco: "Frações" },
+    { q: "2x + 5 = 15. Qual o valor de x?", opts: [5, 10, 2, 8], res: 5, dica: "Passe o 5 subtraindo.", bncc: "EF07MA14", bloco: "Álgebra" },
+    { q: "Qual o MDC de 12 e 18?", opts: [2, 3, 6, 9], res: 6, dica: "Maior divisor comum.", bncc: "EF07MA01", bloco: "Múltiplos" }
+];
 
-<div id="mdash" class="modal" role="dialog" aria-modal="true">
-    <div class="mc">
-        <button class="mx" onclick="fecharM('mdash')">✕</button>
-        <h2>Painel de Competências</h2>
-        <p class="modal-info">Desempenho consolidado por Bloco e Habilidade BNCC.</p>
-        <div id="dash-content"></div>
-        <button class="btn-start" onclick="exportarRelatorioCSV()" style="background:var(--neon-green); color:#000;">📥 Baixar Relatório (CSV)</button>
-    </div>
-</div>
+let state = {
+    ptsA: 0, ptsB: 0, comboA: 0, comboB: 0,
+    turno: 'A', qIndex: 0, rodada: 1
+};
 
-<div id="mcred" class="modal" role="dialog" aria-modal="true">
-    <div class="mc">
-        <button class="mx" onclick="fecharM('mcred')">✕</button>
-        <h2>Laboratório Tech</h2>
-        <p>Desenvolvido pelo <strong>Prof. Alessandro Barbosa</strong></p>
-        <p class="credits-text">
-            Este recurso utiliza o <strong>Desenho Universal para a Aprendizagem (DUA)</strong> 
-            para promover o ensino inclusivo de matemática, focando na recomposição de lacunas.
-        </p>
-        <small>IFSP - Campus Capivari | Profa. Dra. Débora Alfaro</small>
-        <button class="btn-start" onclick="fecharM('mcred')">Fechar</button>
-    </div>
-</div>
+function iniciarJogo() {
+    document.getElementById('splash-screen').classList.add('hidden');
+    document.getElementById('game-screen').classList.remove('hidden');
+    carregarQuestao();
+}
 
-<div id="go">
-    <div class="mc">
-        <div class="go-title">SISTEMA REINICIADO</div>
-        <p id="go-txt"></p>
-        <div id="go-stats"></div>
-        <button class="btn-start" onclick="reiniciar()">TENTAR NOVAMENTE</button>
-        <button class="bc2" onclick="irParaSeletor()" style="width:100%;">Trocar Bloco de Estudo</button>
-    </div>
-</div>
+function carregarQuestao() {
+    const q = banco[state.qIndex];
+    document.getElementById('question-text').innerText = q.q;
+    document.getElementById('bloco-label').innerText = `BLOCO: ${q.bloco} | BNCC: ${q.bncc}`;
+    document.getElementById('dica-box').innerText = `Dica: ${q.dica}`;
+    document.getElementById('feedback').innerText = "";
+    
+    const grid = document.getElementById('options-grid');
+    grid.innerHTML = '';
+    
+    q.opts.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-opt';
+        btn.innerText = opt;
+        btn.onclick = () => verificar(opt);
+        grid.appendChild(btn);
+    });
 
-<audio id="bgm" loop><source src="trilha.mp3" type="audio/mpeg"></audio>
+    atualizarInterface();
+}
 
-<script type="module" src="js/main.js"></script>
+function verificar(escolha) {
+    const q = banco[state.qIndex];
+    const isCorrect = escolha === q.res;
+    const fb = document.getElementById('feedback');
 
+    if (isCorrect) {
+        fb.innerText = "✅ ACERTOU!";
+        fb.style.color = "var(--neon-green)";
+        processarPonto();
+    } else {
+        fb.innerText = "❌ ERROU!";
+        fb.style.color = "var(--neon-pink)";
+        resetCombo();
+    }
+
+    setTimeout(() => {
+        state.turno = state.turno === 'A' ? 'B' : 'A';
+        state.qIndex = (state.qIndex + 1) % banco.length;
+        state.rodada++;
+        if (state.ptsA >= 100 || state.ptsB >= 100) finalizar();
+        else carregarQuestao();
+    }, 1500);
+}
+
+function processarPonto() {
+    let pts = 10;
+    if (state.turno === 'A') {
+        state.comboA++;
+        if (state.comboA >= 2) pts = 15;
+        if (state.comboA >= 3) pts = 20;
+        state.ptsA += pts;
+    } else {
+        state.comboB++;
+        if (state.comboB >= 2) pts = 15;
+        if (state.comboB >= 3) pts = 20;
+        state.ptsB += pts;
+    }
+}
+
+function resetCombo() {
+    if (state.turno === 'A') state.comboA = 0;
+    else state.comboB = 0;
+}
+
+function atualizarInterface() {
+    document.getElementById('pts-a').innerText = state.ptsA;
+    document.getElementById('pts-b').innerText = state.ptsB;
+    document.getElementById('combo-a').innerText = `Combo: x${state.comboA || 1}`;
+    document.getElementById('combo-b').innerText = `Combo: x${state.comboB || 1}`;
+    document.getElementById('box-a').className = `team team-a ${state.turno === 'A' ? 'active' : ''}`;
+    document.getElementById('box-b').className = `team team-b ${state.turno === 'B' ? 'active' : ''}`;
+    document.getElementById('turn-msg').innerText = `VEZ DO 7º${state.turno}`;
+    document.getElementById('round-info').innerText = `RODADA ${state.rodada}`;
+}
+
+function finalizar() {
+    document.getElementById('win-screen').classList.remove('hidden');
+    document.getElementById('winner-name').innerText = state.ptsA >= 100 ? "7ºA VENCEU!" : "7ºB VENCEU!";
+}
+</script>
 </body>
 </html>
