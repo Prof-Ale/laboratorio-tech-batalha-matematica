@@ -1,17 +1,15 @@
-/**
- * js/data/questions/trilha3.js
- * BLOCO 3: Multiplicação, Divisão e Potenciação de Inteiros
- */
-
+// js/data/questions/trilha3.js
+// Corrigido para exportar 'bloco3' de forma limpa
 export const bloco3 = [
-    // === BLOCO 1: REGRA DE SINAIS (01 a 10) ===
     {
-        id: "T3Q01", t: 3, tipo: "sinais", bncc: "EF07MA04", bncc_desc: "Multiplicação de Inteiros",
+        id: "T3Q01", bloco: 3, tipo: "sinais", bncc: "EF07MA04",
         display: "(-5) × (-3) = ?", 
         botoes: ["-15", "15", "-8", "8"], res: "15", 
         passo: "Sinais iguais na multiplicação resultam em positivo. 5 x 3 = 15.", 
         dica: "Menos com Menos dá Mais!"
     },
+    // ... demais questões (certifique-se de que cada uma termina com vírgula)
+
     {
         id: "T3Q02", t: 3, tipo: "sinais", bncc: "EF07MA04", bncc_desc: "Divisão de Inteiros",
         display: "(-20) ÷ 4 = ?", 
