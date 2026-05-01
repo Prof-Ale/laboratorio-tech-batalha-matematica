@@ -1,74 +1,115 @@
-// Importações baseadas na estrutura do seu relatório técnico
 import { G, salvarProgresso } from './engine/gameState.js';
 import { selQ } from './engine/selector.js';
 import { renderHUD, falarDica, mostrarModal, atualizarAvatar } from './ui-manager.js';
 
-// Variáveis de Controle da Batalha
+// Váriaveis de Batalha v6.0
 let scoreA = 0, scoreB = 0;
 let turnoAtual = 'A';
 let modoBuzzer = false;
-let perguntasFeitasNoBloco = []; // CONTROLE DE REPETIÇÃO
+let perguntasFeitasTotal = new Set(); // Garante não-repetição absoluta
 
 /** 
- * EXPOSIÇÃO PARA O HTML (Conserta o erro "is not defined")
+ * INTERFACE INICIAL (Splash Screen)
  */
 window.mostrarSeletorBlocos = () => {
+    const nome = document.getElementById('nome-cientista').value;
+    if (!nome) {
+        alert("Identifique-se, Cientista!");
+        return;
+    }
+    G.nome = nome;
     document.getElementById('splash-screen').classList.add('hidden');
     document.getElementById('block-selector').classList.remove('hidden');
+    salvarProgresso();
 };
 
+/** 
+ * INICIALIZAÇÃO DO BLOCO
+ */
 window.iniciarBloco = (id) => {
     G.blocoAtivo = id;
-    perguntasFeitasNoBloco = []; // Reseta histórico ao trocar de bloco
     document.getElementById('block-selector').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
+    
+    // Inicia música de fundo se estiver ativada
+    const bgm = document.getElementById('bgm');
+    if (G.musica) bgm.play().catch(e => console.log("Áudio aguardando clique"));
+    
     proximaQ();
 };
 
+/** 
+ * MOTOR DE SORTEIO SEM REPETIÇÃO
+ */
 window.proximaQ = () => {
-    // Motor de sorteio sem repetição
     let q = selQ(G.blocoAtivo);
     
-    // Se a questão já saiu, tenta outra até esgotar o banco
+    // Se a questão já saiu, tenta buscar outra no pool do bloco
     let tentativas = 0;
-    while (perguntasFeitasNoBloco.includes(q.id) && tentativas < 50) {
+    while (perguntasFeitasTotal.has(q.id) && tentativas < 100) {
         q = selQ(G.blocoAtivo);
         tentativas++;
     }
     
-    perguntasFeitasNoBloco.push(q.id);
+    perguntasFeitasTotal.add(q.id);
     G.questaoAtual = q;
     G.respondeu = false;
     
-    atualizarInterface(q);
+    // Atualiza interface visual (HUD e Botões)
+    atualizarInterfaceBatalha(q);
 };
 
+/** 
+ * LOGICA DE BATALHA E PONTUAÇÃO
+ */
 window.verificarResposta = (escolha) => {
     if (G.respondeu) return;
     G.respondeu = true;
 
-    const acertou = escolha === G.questaoAtual.res;
-    
+    const q = G.questaoAtual;
+    const acertou = escolha === q.res;
+
     if (acertou) {
-        if (turnoAtual === 'A') scoreA += 10; else scoreB += 10;
+        let pontos = calcularPontos();
+        if (turnoAtual === 'A') scoreA += pontos; else scoreB += pontos;
         G.combo++;
-        atualizarAvatar('ok'); // Ativa animação jump
+        atualizarAvatar('ok'); // Vídeo avatar_jump.mp4
     } else {
         G.combo = 0;
-        atualizarAvatar('no'); // Ativa animação chute
+        atualizarAvatar('no'); // Vídeo avatar_chute.mp4
     }
 
-    // Alternância de turno automática (se não for modo Buzzer)
-    if (!modoBuzzer) {
-        turnoAtual = turnoAtual === 'A' ? 'B' : 'A';
-    }
+    // Alternância de turno
+    if (!modoBuzzer) turnoAtual = (turnoAtual === 'A') ? 'B' : 'A';
 
-    renderHUD(acertou, G.questaoAtual.passo);
+    renderHUD(acertou, q.passo);
     atualizarPlacarVisual();
-    salvarProgresso();
+    
+    if (scoreA >= 100 || scoreB >= 100) {
+        mostrarTelaCampeao();
+    }
 };
 
-// Controles de Áudio
+function calcularPontos() {
+    let base = 10;
+    if (G.combo >= 2) base += 5; // Bônus Combo
+    // Adicionar aqui lógica de Rodada Especial (ex: cada 5 questões)
+    return base;
+}
+
+function atualizarPlacarVisual() {
+    document.getElementById('scoreA').innerText = scoreA;
+    document.getElementById('scoreB').innerText = scoreB;
+    document.getElementById('tcb').innerText = G.combo;
+    
+    // DUA: Feedback visual de quem joga agora
+    document.querySelector('.team-a').classList.toggle('ativo', turnoAtual === 'A');
+    document.querySelector('.team-b').classList.toggle('ativo', turnoAtual === 'B');
+}
+
+/** 
+ * CONTROLES DE ÁUDIO E ACESSIBILIDADE
+ */
 window.toggleMusica = () => {
     G.musica = !G.musica;
     const bgm = document.getElementById('bgm');
@@ -81,19 +122,5 @@ window.toggleVoz = () => {
     document.getElementById('tvoz').innerText = G.voz ? 'ON' : 'OFF';
 };
 
-// Função de Batalha: Modo Buzzer
-window.toggleBuzzerMode = () => {
-    modoBuzzer = !modoBuzzer;
-    document.getElementById('btn-buzzer-mode').innerText = modoBuzzer ? "🔄 Modo: Buzzer" : "🔄 Modo: Alternado";
-};
-
-function atualizarPlacarVisual() {
-    document.getElementById('scoreA').innerText = scoreA;
-    document.getElementById('scoreB').innerText = scoreB;
-    document.getElementById('box-a').classList.toggle('active', turnoAtual === 'A');
-    document.getElementById('box-b').classList.toggle('active', turnoAtual === 'B');
-}
-
-// Modais
 window.abrirM = (id) => mostrarModal(id, true);
 window.fecharM = (id) => mostrarModal(id, false);
