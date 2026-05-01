@@ -219,7 +219,7 @@ export const trilha2 = [
         botoes: ["2", "3", "6", "7"], res: "6", 
         passo: "O MDC de 30 e 42 é 6. Serão 5 grupos numa turma e 7 grupos na outra.", 
         dica: "Procure o MDC entre 30 e 42."
-    }
+    },
 
     // === QUESTÕES EXTRAS: MMC/MDC CONTEXTUALIZADOS (Q31-Q40) ===
     {
