@@ -217,7 +217,7 @@ export const trilha1 = [
         botoes: ["0", "1", "-1", "Nenhum"], res: "0", 
         passo: "O zero não possui sinal, portanto o oposto do zero é o próprio zero.", 
         dica: "Fica exatamente no 'meio' do espelho!"
-    }
+    },
 
     // === QUESTÕES EXTRAS: SITUAÇÕES CONTEXTUALIZADAS (Q31-Q40) ===
     {
