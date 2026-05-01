@@ -1,250 +1,155 @@
 /**
- * ui-manager.js
- * Gestor de Interface e Dashboard Clínico (Versão 3.2 - Seminário IFSP)
- * Responsável pelo DUA (Voz), HUD e pelo Mapa de Calor de Erros (Cálculo vs. Sinal).
- * Gestor de Interface e Dashboard Clínico (Versão 3.2 - controles de mídia separados)
- * Música e voz agora são independentes.
+ * ui-manager.js (v4.0 - Arena Edition)
+ * Especialista: Gestão de Interface, Áudio DUA e Análise Pedagógica.
+ * Foco: Batalha Matemática 7º Ano - IFSP / Milton de Tolosa.
  */
 
-import { G } from './engine/gameState.js';
+import { G, salvarProgresso } from './engine/gameState.js';
 
 const bgm = document.getElementById("bgm");
 
 /* ========================================================
-   VOZES: carrega lista assim que o navegador disponibilizar
+   SISTEMA DE ÁUDIO E VOZ (DUA)
 ======================================================== */
+
+// Pré-carregamento de vozes para o navegador
 if (typeof window !== 'undefined' && window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 }
 
-/* ========================================================
-   SÍNTESE DE VOZ (TEXT-TO-SPEECH)
-   Controlada por G.voz — independente de G.musica
-======================================================== */
-export function narrarContexto(t) {
+/**
+ * Narra dicas e feedbacks (Múltiplas formas de Representação)
+ */
+export function falarAda(texto) {
     try {
-        if (typeof window === 'undefined' || !window.speechSynthesis) return;
-        if (!G.voz) return;
+        if (!G.voz || !window.speechSynthesis) return;
 
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Interrompe fala anterior
 
-        const textoLimpo = t.replace(/<[^>]*>?/gm, '');
-        const u = new SpeechSynthesisUtterance(textoLimpo);
+        const u = new SpeechSynthesisUtterance(texto.replace(/<[^>]*>?/gm, ''));
         const vozes = window.speechSynthesis.getVoices();
+        
+        // Preferência por vozes pt-BR naturais
+        const vozBR = vozes.find(v => v.lang.includes('pt-BR')) || vozes[0];
+        
+        u.voice = vozBR;
+        u.rate = 1.0;
+        u.pitch = 1.0;
 
-        const masc = vozes.find(x =>
-            x.lang.includes('pt-BR') &&
-            (x.name.toLowerCase().includes('male') ||
-             x.name.toLowerCase().includes('daniel') ||
-             x.name.toLowerCase().includes('antonio'))
-        );
-
-        u.lang = "pt-BR";
-        u.rate = 0.93;
-
-        if (masc) {
-            u.voice = masc;
-            u.pitch = 0.9;
-        } else {
-            const vozesBR = vozes.filter(x => x.lang.includes('pt-BR'));
-            if (vozesBR.length > 0) u.voice = vozesBR[vozesBR.length - 1];
-            u.pitch = 0.6;
-        }
-
-        // Baixa o BGM enquanto fala — só se a música estiver ligada
+        // Ducking: Abaixa a música para a voz ser ouvida
         u.onstart = () => { if (bgm && G.musica) bgm.volume = 0.02; };
         u.onend   = () => { if (bgm && G.musica) bgm.volume = 0.07; };
-        u.onerror = () => { if (bgm && G.musica) bgm.volume = 0.07; };
 
         window.speechSynthesis.speak(u);
-
     } catch (e) {
-        console.warn("TTS indisponível:", e);
+        console.warn("Falha no TTS:", e);
     }
 }
 
+/**
+ * Executa efeitos sonoros curtos (SFX)
+ */
+export function tocarSFX(tipo) {
+    const sfx = new Audio(`./assets/audio/${tipo}.mp3`);
+    sfx.volume = 0.4;
+    sfx.play().catch(() => {}); // Ignora se o navegador bloquear
+}
+
 /* ========================================================
-   CONTROLES DE MÍDIA SEPARADOS
+   CONTROLES DE INTERFACE E HUD
 ======================================================== */
 
-// Botão MÚSICA — não toca nem pausa a voz
-export function toggleMusica() {
-    G.musica = !G.musica;
-    const el = document.getElementById("tsom");
-    if (el) el.textContent = G.musica ? "ON" : "OFF";
+export function renderHUD(acerto = null, passo = "") {
+    const feedbackEl = document.getElementById("fb");
+    const gridBotoes = document.getElementById("grid-botoes");
 
-    if (G.musica) {
-        if (bgm) { bgm.volume = 0.07; bgm.play().catch(() => {}); }
+    // HUD Elements
+    document.getElementById("tcb").textContent = G.combo;
+    document.getElementById("tnv").textContent = G.nivel;
+    document.getElementById("fen").style.width = `${G.energia}%`;
+    document.getElementById("fv").style.width  = `${G.vida}%`;
+
+    if (acerto !== null) {
+        feedbackEl.innerHTML = acerto 
+            ? `<span style="color:var(--neon-green)">✔️ CORRETO!</span> <br> <small>${passo}</small>`
+            : `<span style="color:var(--neon-red)">❌ TENTE NOVAMENTE!</span> <br> <small>${passo}</small>`;
+        
+        // Trava os botões após responder
+        const botoes = document.querySelectorAll(".ba");
+        botoes.forEach(b => b.classList.add("dis"));
+        
+        // Mostra o botão de Próxima
+        document.getElementById("btn-prox").classList.remove("hidden");
     } else {
-        if (bgm) bgm.pause();
+        feedbackEl.innerHTML = "";
+        document.getElementById("btn-prox").classList.add("hidden");
     }
 }
 
-// Botão VOZ — não mexe na música
-export function toggleVoz() {
-    G.voz = !G.voz;
-    const el = document.getElementById("tvoz");
-    if (el) el.textContent = G.voz ? "ON" : "OFF";
-
-    // Interrompe fala em andamento se desligar
-    if (!G.voz && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-    }
-}
-
-// Alias para não quebrar chamadas existentes em main.js
-export function toggleSom() { toggleMusica(); }
-
-/* ========================================================
-   AVATAR
-======================================================== */
-export function tocarAv(tipo) {
+export function atualizarAvatar(status) {
     const img = document.getElementById("av-img");
-    const vid = document.getElementById(tipo === "ok" ? "vid-ok" : "vid-no");
+    const vidOk = document.getElementById("vid-ok");
+    const vidNo = document.getElementById("vid-no");
 
-    if (!img || !vid) return;
+    // Esconde tudo e mostra o vídeo correspondente
+    [img, vidOk, vidNo].forEach(el => el.classList.add("avh"));
 
-    img.classList.add("avh");
-    vid.classList.remove("avh");
-    vid.currentTime = 0;
-    vid.play().catch(() => {
-        vid.classList.add("avh");
-        img.classList.remove("avh");
-    });
+    const target = status === 'ok' ? vidOk : vidNo;
+    target.classList.remove("avh");
+    target.currentTime = 0;
+    target.play().catch(() => img.classList.remove("avh"));
 
-    vid.onended = () => {
-        vid.classList.add("avh");
+    target.onended = () => {
+        target.classList.add("avh");
         img.classList.remove("avh");
     };
 }
 
 /* ========================================================
-   HUD
+   DASHBOARD CLÍNICO (ANÁLISE DE BARREIRAS)
 ======================================================== */
-export function updHUD() {
-    const fv  = document.getElementById("fv");
-    const fen = document.getElementById("fen");
-    const tcb = document.getElementById("tcb");
-    const tnv = document.getElementById("tnv");
 
-    if (fv)  fv.style.width  = G.vida    + "%";
-    if (fen) fen.style.width = G.energia + "%";
-    if (tcb) tcb.textContent = G.combo;
-    if (tnv) tnv.textContent = G.nivel;
-}
-
-/* ========================================================
-   MODAIS
-======================================================== */
-export function abrirM(id) {
+export function mostrarModal(id, status) {
     const modal = document.getElementById(id);
-    if (!modal) return;
-    modal.classList.add("show");
-    if (id === 'mdash') gerarDashboard();
+    if (status) {
+        modal.classList.add("show");
+        if (id === 'mdash') gerarRelatorioClinico();
+    } else {
+        modal.classList.remove("show");
+    }
 }
 
-export function fecharM(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.remove("show");
-}
+function gerarRelatorioClinico() {
+    const container = document.getElementById("dash-content");
+    container.innerHTML = "";
 
-/* ========================================================
-   DASHBOARD DO PROFESSOR: MAPA DE CALOR CLÍNICO
-======================================================== */
-function gerarDashboard() {
-    const c = document.getElementById("dash-content");
-    if (!c) return;
-    c.innerHTML = "";
+    if (Object.keys(G.historico).length === 0) {
+        container.innerHTML = "<p>Sem dados para análise ainda.</p>";
+        return;
+    }
 
-    let temDados = false;
-
-    // A MUDANÇA ESTÁ AQUI: Agora lemos o G.historico diretamente!
     for (let hab in G.historico) {
-        const hist = G.historico[hab];
-        if (!hist) continue;
+        const h = G.historico[hab];
+        const total = h.acertos + h.erros_sinal + h.erros_calculo;
+        const txAcerto = Math.round((h.acertos / total) * 100);
 
-        const acertos  = hist.acertos       || 0;
-        const errSinal = hist.erros_sinal   || 0;
-        const errCalc  = hist.erros_calculo || 0;
-        const errGeral = hist.erros         || 0; // Para retrocompatibilidade caso exista
-
-        const total = acertos + errSinal + errCalc + errGeral;
-        if (total === 0) continue;
-        temDados = true;
-
-        const txAcerto   = Math.round((acertos / total) * 100);
-        const txErroSin  = Math.round((errSinal / total) * 100);
-        const txErroCalc = Math.round(((errCalc + errGeral) / total) * 100);
-
-        let alerta = "";
-        if (errSinal > errCalc && errSinal > 0) {
-            alerta = `
-                <div style="margin-top:10px;padding:8px;background:rgba(212,160,23,0.1);border-left:3px solid var(--choco-gold);border-radius:4px;font-size:11px;color:var(--choco-cream)">
-                    <strong>⚠️ Barreira Conceitual:</strong> O estudante sabe calcular, mas falha sistematicamente na regra de sinais. Sugere-se mediação com a Reta Numérica manipulável.
-                </div>`;
-        } else if (errCalc > errSinal && errCalc > 0) {
-            alerta = `
-                <div style="margin-top:10px;padding:8px;background:rgba(255,68,68,0.1);border-left:3px solid var(--neon-red);border-radius:4px;font-size:11px;color:var(--choco-cream)">
-                    <strong>🚨 Barreira de Cálculo:</strong> O estudante compreende o conceito, mas sofre com deficiências de aritmética básica. Necessário reforço operacional.
-                </div>`;
-        } else if (txAcerto >= 70) {
-            alerta = `
-                <div style="margin-top:10px;padding:8px;background:rgba(0,255,136,0.1);border-left:3px solid var(--neon-green);border-radius:4px;font-size:11px;color:var(--choco-cream)">
-                    <strong>🌟 ZDP atingida:</strong> Proficiência confirmada nesta habilidade. Pronto para desafios algébricos.
-                </div>`;
+        let insightPedagogico = "";
+        if (h.erros_sinal > h.erros_calculo) {
+            insightPedagogico = "<b>Dica:</b> Focar em atividades de reta numérica (conceito de direção).";
+        } else if (h.erros_calculo > h.erros_sinal) {
+            insightPedagogico = "<b>Dica:</b> Necessário reforço em algoritmos de tabuada e cálculo mental.";
         }
 
-        const corBorda = txAcerto >= 50 ? 'var(--neon-green)' : 'var(--neon-red)';
-        
-        // A OUTRA MUDANÇA ESTÁ AQUI: Lemos a descrição de hist.desc
-        const descricaoDaHabilidade = hist.desc || "Habilidade da BNCC";
-
-        c.innerHTML += `
-            <div class="dash-card" style="border-left-color:${corBorda}">
-                <h3 style="display:flex;justify-content:space-between;align-items:center;">
-                    ${hab}
-                    <span style="font-size:12px;color:var(--text-muted)">Desempenho: ${txAcerto}%</span>
-                </h3>
-                <p style="font-size:12px">${descricaoDaHabilidade}</p>
-
-                <div style="margin-top:10px;font-size:12px;display:flex;justify-content:space-between;">
-                    <span style="color:var(--neon-green)">✓ Acertos: ${acertos}</span>
-                    <span style="color:var(--choco-gold)">⚠️ Sinal: ${errSinal}</span>
-                    <span style="color:var(--neon-red)">✗ Cálculo: ${errCalc + errGeral}</span>
+        container.innerHTML += `
+            <div class="dash-card">
+                <h3>${hab} - ${txAcerto}%</h3>
+                <p>${h.desc || ""}</p>
+                <div class="dash-bar">
+                    <div class="dash-fill-ok" style="width:${txAcerto}%"></div>
+                    <div class="dash-fill-no" style="width:${100-txAcerto}%"></div>
                 </div>
-
-                <div style="height:10px;margin-top:8px;display:flex;border-radius:8px;overflow:hidden;">
-                    <div style="width:${txAcerto}%;background:var(--neon-green)" title="Acertos"></div>
-                    <div style="width:${txErroSin}%;background:var(--choco-gold)" title="Erro de Sinal"></div>
-                    <div style="width:${txErroCalc}%;background:var(--neon-red)" title="Erro de Cálculo"></div>
-                </div>
-
-                ${alerta}
-            </div>`;
+                <small>${insightPedagogico}</small>
+            </div>
+        `;
     }
-
-    if (!temDados) {
-        c.innerHTML = `
-            <p style="font-size:13px;color:var(--text-muted);text-align:center;padding:20px;">
-                Nenhum dado recolhido ainda. O estudante deve resolver os desafios para gerar a análise clínica.
-            </p>`;
-    }
-}
-
-/* ========================================================
-   GAME OVER
-======================================================== */
-export function exibirGameOver() {
-    const total = G.acertos + G.erros;
-    const tx    = total > 0 ? Math.round((G.acertos / total) * 100) : 0;
-
-    const goTxt   = document.getElementById("go-txt");
-    const goSt    = document.getElementById("go-st");
-    const goModal = document.getElementById("go");
-
-    if (goTxt)   goTxt.innerHTML  = "O terminal entrou em modo de segurança. Mas a ciência constrói-se com o erro.";
-    if (goSt)    goSt.textContent = `Acertos: ${G.acertos} | Falhas Resgatadas: ${G.erros} | Taxa Lógica: ${tx}%`;
-    if (goModal) goModal.classList.add("show");
-
-    narrarContexto(`Laboratório pausado. Taxa lógica de ${tx} por cento. Solicite a análise do Professor para ver os detalhes.`);
 }
