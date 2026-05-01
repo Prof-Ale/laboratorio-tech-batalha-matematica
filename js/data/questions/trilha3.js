@@ -215,7 +215,7 @@ export const trilha3 = [
         botoes: ["Positivo", "Negativo", "Zero", "Primo"], res: "Positivo", 
         passo: "Como o expoente 4 é par, o resultado será positivo (16).", 
         dica: "Olhe sempre para o expoente!"
-    }
+    },
 
     // === QUESTÕES EXTRAS: MULTIPLICAÇÃO E DIVISÃO DE INTEIROS (Q31-Q40) ===
     {
