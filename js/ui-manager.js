@@ -5,6 +5,7 @@
  */
 
 import { G, salvarProgresso } from './engine/gameState.js';
+import { animarSalto } from './canvas-engine.js';
 
 const bgm = document.getElementById('bgm');
 
