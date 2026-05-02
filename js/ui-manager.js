@@ -92,6 +92,11 @@ export function renderHUD(acerto, passo = '', pontos = 0, turma = null) {
         return;
     }
 
+    // DISPARA A ANIMAÇÃO DO SALTO NA RETA (Representação Concreta)
+    if (G.questaoAtual) {
+        animarSalto(G.questaoAtual.num1 || 0, G.questaoAtual.res, acerto);
+    }
+
     // Feedback de acerto ou erro
     if (fb) {
         if (acerto) {
@@ -220,7 +225,7 @@ export function exportarCSV() {
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href     = url;
+    link.href      = url;
     link.download = `LabTech_${G.nome}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
     link.click();
     URL.revokeObjectURL(url);
