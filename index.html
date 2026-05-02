@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratório Tech - Arena Batalha v6.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     TELA 1: SPLASH SCREEN
+═══════════════════════════════════════════ -->
+<section id="splash-screen" class="screen">
+    <div class="splash-inner">
+        <div class="splash-logo">LABORATÓRIO TECH</div>
+        <div class="splash-sub">SISTEMA DE BATALHA MATEMÁTICA v6.0</div>
+
+        <div class="splash-av">
+            <div class="ring"></div>
+            <div class="ring2"></div>
+            <img src="assets/img/avatar_estatico.png" alt="Prof. Alê Chocolate">
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="nome-cientista"
+                placeholder="IDENTIFIQUE-SE, CIENTISTA MASTER"
+                autocomplete="off"
+                tabindex="0"
+                aria-label="Nome do cientista">
+            <button class="btn-start-neon" onclick="mostrarSeletorBlocos()" tabindex="0">
+                ACESSAR SISTEMAS
+            </button>
+        </div>
+
+        <div class="splash-sig">Prof. Alessandro Barbosa • MathLab • 2026</div>
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     TELA 2: SELETOR DE BLOCOS
+═══════════════════════════════════════════ -->
+<section id="block-selector" class="screen hidden">
+    <h2 class="section-title">CENTRAL DE MANUTENÇÃO</h2>
+    <p class="section-desc">Selecione o setor de recomposição — conteúdo do 1º bimestre (6º e 7º anos)</p>
+
+    <div class="block-grid">
+        <button class="block-card" onclick="iniciarBloco(1)" tabindex="0">
+            <span class="block-icon">🔢</span>
+            <span class="block-name">Bloco 1</span>
+            <small>Inteiros: Soma e Subtração</small>
+        </button>
+        <button class="block-card" onclick="iniciarBloco(2)" tabindex="0">
+            <span class="block-icon">⚖️</span>
+            <span class="block-name">Bloco 2</span>
+            <small>Múltiplos e Divisores</small>
+        </button>
+        <button class="block-card" onclick="iniciarBloco(3)" tabindex="0">
+            <span class="block-icon">📏</span>
+            <span class="block-name">Bloco 3</span>
+            <small>Inteiros: Multiplicação e Divisão</small>
+        </button>
+        <button class="block-card" onclick="iniciarBloco(4)" tabindex="0">
+            <span class="block-icon">🧩</span>
+            <span class="block-name">Bloco 4</span>
+            <small>Frações, Decimais e Porcentagem</small>
+        </button>
+        <button class="block-card" onclick="iniciarBloco(5)" tabindex="0">
+            <span class="block-icon">🔗</span>
+            <span class="block-name">Bloco 5</span>
+            <small>MMC e MDC</small>
+        </button>
+    </div>
+
+    <button class="bc2" onclick="voltarAoSplash()" style="margin-top:20px;">← Voltar</button>
+</section>
+
+<!-- ══════════════════════════════════════════
+     TELA 3: ARENA DE JOGO
+═══════════════════════════════════════════ -->
+<section id="game-screen" class="screen hidden">
+
+    <!-- PLACAR DA BATALHA -->
+    <div class="scoreboard-battle" id="scoreboard-battle">
+        <div id="box-a" class="team-box team-a">
+            7ºA <span id="scoreA">0</span>
+        </div>
+        <div class="battle-center">
+            <div class="battle-label">⚔️ BATALHA</div>
+            <button id="btn-buzzer-mode" onclick="toggleBuzzerMode()" title="Alterna entre modo alternado e buzzer por teclado [A] e [B]">
+                🔄 MODO: ALTERNADO
+            </button>
+        </div>
+        <div id="box-b" class="team-box team-b">
+            7ºB <span id="scoreB">0</span>
+        </div>
+    </div>
+
+    <!-- CONTROLES DE MÍDIA -->
+    <div class="media-controls">
+        <button onclick="toggleMusica()" aria-label="Música">🎵 <span id="tsom">ON</span></button>
+        <button onclick="toggleVoz()" aria-label="Voz">🔊 <span id="tvoz">ON</span></button>
+        <button onclick="irParaSeletor()" aria-label="Trocar bloco">⚙️ BLOCOS</button>
+    </div>
+
+    <!-- ÁREA PRINCIPAL DO JOGO -->
+    <div class="gw">
+
+        <!-- HUD -->
+        <div class="hud">
+            <div class="hi">
+                <div class="hl">Combo</div>
+                <div class="hv" id="tcb">0</div>
+            </div>
+            <div class="hi">
+                <div class="hl">Nível</div>
+                <div class="hv" id="tnv">1</div>
+            </div>
+            <div class="hi">
+                <div class="hl">Acertos</div>
+                <div class="hv" id="tac">0</div>
+            </div>
+            <div class="hi">
+                <div class="hl">Erros</div>
+                <div class="hv" id="ter">0</div>
+            </div>
+        </div>
+
+        <!-- CANVAS: RETA NUMÉRICA -->
+        <canvas id="canvas-game" width="580" height="130"
+            aria-label="Representação visual do problema na reta numérica">
+        </canvas>
+
+        <!-- ENUNCIADO DA QUESTÃO -->
+        <div id="conta-display" aria-live="assertive">Carregando...</div>
+
+        <!-- DICA (regra-box) -->
+        <div id="regra-box" aria-live="polite"></div>
+
+        <!-- BOTÕES DE RESPOSTA -->
+        <div class="ag" id="grid-botoes" role="group" aria-label="Opções de resposta"></div>
+
+        <!-- FEEDBACK -->
+        <div id="fb" aria-live="assertive"></div>
+
+        <!-- DIAGNÓSTICO TÉCNICO (oculto para alunos, visível em dev) -->
+        <div id="diag-status" class="diag-box" aria-live="polite"></div>
+
+        <!-- PRÓXIMO DESAFIO -->
+        <button id="btn-prox" class="hidden" onclick="proximaQ()" tabindex="0">
+            PRÓXIMO DESAFIO →
+        </button>
+
+    </div><!-- /gw -->
+
+</section>
+
+<!-- ══════════════════════════════════════════
+     AVATAR DO PROF. ALÊ CHOCOLATE
+═══════════════════════════════════════════ -->
+<div id="av" class="hidden" aria-hidden="true">
+    <img id="av-img" src="assets/img/avatar_estatico.png" alt="Prof. Alê">
+    <video id="vid-ok" class="avh" muted playsinline>
+        <source src="assets/video/avatar_jump.mp4" type="video/mp4">
+    </video>
+    <video id="vid-no" class="avh" muted playsinline>
+        <source src="assets/video/avatar_chute.mp4" type="video/mp4">
+    </video>
+</div>
+
+<!-- ══════════════════════════════════════════
+     BOTÕES FLUTUANTES (canto superior direito)
+═══════════════════════════════════════════ -->
+<div class="btn-top-group">
+    <button class="btn-round" onclick="verPerfilAluno()" title="Meu Perfil">👤</button>
+    <button class="btn-round" onclick="abrirM('mdash')" title="Dashboard BNCC">📊</button>
+    <button class="btn-round" onclick="abrirM('mcred')" title="Sobre o Projeto">i</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: DASHBOARD BNCC
+═══════════════════════════════════════════ -->
+<div id="mdash" class="modal" role="dialog" aria-modal="true" aria-label="Dashboard de desempenho BNCC">
+    <div class="mc">
+        <button class="mx" onclick="fecharM('mdash')" aria-label="Fechar">✕</button>
+        <h2>📊 Dashboard BNCC</h2>
+        <p class="modal-info">Desempenho consolidado por bloco e habilidade BNCC.</p>
+        <div id="dash-content"></div>
+        <button class="btn-start" onclick="exportarRelatorioCSV()"
+            style="background:var(--neon-green);color:#000;margin-top:12px;">
+            📥 Baixar Relatório (CSV)
+        </button>
+        <button class="bc2" onclick="fecharM('mdash')" style="width:100%;margin-top:8px;">
+            Fechar
+        </button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: CRÉDITOS
+═══════════════════════════════════════════ -->
+<div id="mcred" class="modal" role="dialog" aria-modal="true" aria-label="Créditos do projeto">
+    <div class="mc">
+        <button class="mx" onclick="fecharM('mcred')" aria-label="Fechar">✕</button>
+        <h2>🔬 Laboratório Tech</h2>
+        <p><strong>Batalha Matemática v6.0</strong></p>
+        <p style="margin-top:10px;">
+            Desenvolvido por <strong>Prof. Alessandro Barbosa (Prof. Alê)</strong><br>
+            EE PEI Prof. Milton de Tolosa — Campinas/SP
+        </p>
+        <p style="margin-top:10px;">
+            Projeto acadêmico vinculado à pós-graduação em<br>
+            <strong>Ensino de Ciências e Matemática</strong><br>
+            IFSP Campus Capivari<br>
+            Supervisão: Profa. Dra. Débora Alfaro
+        </p>
+        <p style="margin-top:10px;">
+            Fundamentado nos princípios do<br>
+            <strong>Desenho Universal para a Aprendizagem (DUA)</strong>
+        </p>
+        <p style="margin-top:10px; font-size:13px; color:#888;">
+            Evento: Dia da Matemática — 06 de maio de 2026<br>
+            Homenagem a <strong>Malba Tahan</strong> (Júlio César de Mello e Souza)
+        </p>
+        <button class="btn-start" onclick="fecharM('mcred')" style="margin-top:16px;">
+            Fechar
+        </button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TELA DE CAMPEÃO (GAME OVER / VITÓRIA)
+═══════════════════════════════════════════ -->
+<div id="go" role="dialog" aria-modal="true" aria-label="Resultado da batalha">
+    <div class="mc" style="text-align:center;">
+        <h2 style="font-size:clamp(22px,6vw,32px);">🏆 FIM DE BATALHA!</h2>
+        <p id="go-txt" style="font-size:clamp(16px,4vw,22px);margin:16px 0;"></p>
+        <div id="go-stats" style="margin-bottom:16px;"></div>
+        <button class="btn-start" onclick="reiniciar()" style="margin-bottom:10px;">
+            🔁 NOVA BATALHA
+        </button>
+        <button class="bc2" onclick="irParaSeletor()" style="width:100%;">
+            Trocar Bloco
+        </button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ÁUDIO
+═══════════════════════════════════════════ -->
+<audio id="bgm" loop>
+    <source src="assets/audio/bgm_base.mp3" type="audio/mpeg">
+</audio>
+
+<!-- ══════════════════════════════════════════
+     JAVASCRIPT PRINCIPAL
+═══════════════════════════════════════════ -->
+<script type="module" src="js/main.js"></script>
+
+</body>
+</html>
