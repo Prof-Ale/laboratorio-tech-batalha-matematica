@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laboratório Tech - Arena Batalha v6.0</title>
+    <title>Laboratório Tech - Arena Batalha v6.1</title>
+    <!-- Favicon atualizado para PNG conforme solicitado -->
     <link rel="icon" type="image/png" href="assets/img/favicon.png">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
@@ -11,253 +12,168 @@
 <body>
 
 <!-- ══════════════════════════════════════════
-     TELA 1: SPLASH SCREEN
+     TELA 1: SPLASH SCREEN (LOGIN)
 ═══════════════════════════════════════════ -->
 <section id="splash-screen" class="screen">
     <div class="splash-inner">
         <div class="splash-logo">LABORATÓRIO TECH</div>
-        <div class="splash-sub">SISTEMA DE BATALHA MATEMÁTICA v6.0</div>
+        <div class="splash-sub">SISTEMA DE BATALHA MATEMÁTICA v6.1</div>
 
         <div class="splash-av">
             <div class="ring"></div>
             <div class="ring2"></div>
-            <img src="assets/img/avatar_estatico.png" alt="Prof. Alê Chocolate">
+            <img src="assets/img/avatar_estatico.png" alt="Prof. Alê">
         </div>
 
         <div class="input-group">
-            <input type="text" id="nome-cientista"
-                placeholder="IDENTIFIQUE-SE, CIENTISTA MASTER"
-                autocomplete="off"
-                tabindex="0"
-                aria-label="Nome do cientista">
-            <button class="btn-start-neon" onclick="mostrarSeletorBlocos()" tabindex="0">
+            <input type="text" id="nome-cientista" 
+                   placeholder="NOME DO CIENTISTA" 
+                   autocomplete="off" aria-label="Nome">
+            <input type="text" id="turma-cientista" 
+                   placeholder="TURMA (Ex: 7ºA)" 
+                   autocomplete="off" aria-label="Turma">
+            <button class="btn-start-neon" onclick="mostrarSeletorBlocos()">
                 ACESSAR SISTEMAS
             </button>
         </div>
-
         <div class="splash-sig">Prof. Alessandro Barbosa • MathLab • 2026</div>
     </div>
 </section>
 
 <!-- ══════════════════════════════════════════
-     TELA 2: SELETOR DE BLOCOS
+     TELA 2: SELETOR DE BLOCOS (HUB)
 ═══════════════════════════════════════════ -->
 <section id="block-selector" class="screen hidden">
     <h2 class="section-title">CENTRAL DE MANUTENÇÃO</h2>
-    <p class="section-desc">Selecione o setor de recomposição — conteúdo do 1º bimestre (6º e 7º anos)</p>
+    <p class="section-desc">Selecione o setor de recomposição do 1º bimestre</p>
 
     <div class="block-grid">
-        <button class="block-card" onclick="iniciarBloco(1)" tabindex="0">
+        <button class="block-card" onclick="iniciarBloco(1)">
             <span class="block-icon">🔢</span>
             <span class="block-name">Bloco 1</span>
-            <small>Inteiros: Soma e Subtração</small>
+            <small>Soma e Subtração</small>
         </button>
-        <button class="block-card" onclick="iniciarBloco(2)" tabindex="0">
-            <span class="block-icon">⚖️</span>
-            <span class="block-name">Bloco 2</span>
-            <small>Múltiplos e Divisores</small>
-        </button>
-        <button class="block-card" onclick="iniciarBloco(3)" tabindex="0">
+        <button class="block-card" onclick="iniciarBloco(3)">
             <span class="block-icon">📏</span>
             <span class="block-name">Bloco 3</span>
-            <small>Inteiros: Multiplicação e Divisão</small>
+            <small>Multiplicação e Divisão</small>
         </button>
-        <button class="block-card" onclick="iniciarBloco(4)" tabindex="0">
+        <button class="block-card" onclick="iniciarBloco(4)">
             <span class="block-icon">🧩</span>
             <span class="block-name">Bloco 4</span>
-            <small>Frações, Decimais e Porcentagem</small>
+            <small>Álgebra e Equações</small>
         </button>
-        <button class="block-card" onclick="iniciarBloco(5)" tabindex="0">
-            <span class="block-icon">🔗</span>
-            <span class="block-name">Bloco 5</span>
-            <small>MMC e MDC</small>
+        <button class="block-card" onclick="iniciarBloco(6)">
+            <span class="block-icon">💰</span>
+            <span class="block-name">Bloco 6</span>
+            <small>Porcentagem e Finanças</small>
         </button>
     </div>
-
-    <button class="bc2" onclick="voltarAoSplash()" style="margin-top:20px;">← Voltar</button>
 </section>
 
 <!-- ══════════════════════════════════════════
-     TELA 3: ARENA DE JOGO
+     TELA 3: ARENA DE JOGO (CORE)
 ═══════════════════════════════════════════ -->
 <section id="game-screen" class="screen hidden">
 
+    <!-- CONTROLES FIXOS DE MÍDIA E NAVEGAÇÃO (DUA) -->
+    <div class="media-controls">
+        <button class="btn-control" onclick="toggleMusica()" title="Música">
+            🎵 <span id="tsom">ON</span>
+        </button>
+        <button class="btn-control" onclick="toggleVoz()" title="Voz">
+            🔊 <span id="tvoz">ON</span>
+        </button>
+        <button class="btn-control" onclick="irParaSeletor()" title="Sair do Bloco">
+            🏠 MENU
+        </button>
+    </div>
+
     <!-- PLACAR DA BATALHA -->
-    <div class="scoreboard-battle" id="scoreboard-battle">
-        <div id="box-a" class="team-box team-a">
-            7ºA <span id="scoreA">0</span>
-        </div>
+    <div class="scoreboard-battle">
+        <div id="box-a" class="team-box team-a">7ºA <span id="scoreA">0</span></div>
         <div class="battle-center">
             <div class="battle-label">⚔️ BATALHA</div>
-            <button id="btn-buzzer-mode" onclick="toggleBuzzerMode()" title="Alterna entre modo alternado e buzzer por teclado [A] e [B]">
-                🔄 MODO: ALTERNADO
-            </button>
         </div>
-        <div id="box-b" class="team-box team-b">
-            7ºB <span id="scoreB">0</span>
-        </div>
+        <div id="box-b" class="team-box team-b">7ºB <span id="scoreB">0</span></div>
     </div>
 
-    <!-- CONTROLES DE MÍDIA -->
-    <div class="media-controls">
-        <button onclick="toggleMusica()" aria-label="Música">🎵 <span id="tsom">ON</span></button>
-        <button onclick="toggleVoz()" aria-label="Voz">🔊 <span id="tvoz">ON</span></button>
-        <button onclick="irParaSeletor()" aria-label="Trocar bloco">⚙️ BLOCOS</button>
-    </div>
-
-    <!-- ÁREA PRINCIPAL DO JOGO -->
     <div class="gw">
-
-        <!-- HUD -->
+        <!-- HUD DE STATUS -->
         <div class="hud">
+            <div class="hi"><div class="hl">Combo</div><div class="hv" id="tcb">0</div></div>
+            <div class="hi"><div class="hl">Nível</div><div class="hv" id="tnv">1</div></div>
             <div class="hi">
-                <div class="hl">Combo</div>
-                <div class="hv" id="tcb">0</div>
-            </div>
-            <div class="hi">
-                <div class="hl">Nível</div>
-                <div class="hv" id="tnv">1</div>
-            </div>
-            <div class="hi">
-                <div class="hl">Acertos</div>
-                <div class="hv" id="tac">0</div>
-            </div>
-            <div class="hi">
-                <div class="hl">Erros</div>
-                <div class="hv" id="ter">0</div>
+                <div class="hl">Vida</div>
+                <div class="bh"><div id="fv" class="bf" style="width:100%;background:var(--neon-green)"></div></div>
             </div>
         </div>
 
-        <!-- CANVAS: RETA NUMÉRICA -->
-        <canvas id="canvas-game" width="580" height="130"
-            aria-label="Representação visual do problema na reta numérica">
-        </canvas>
+        <canvas id="canvas-game" width="580" height="130"></canvas>
+        
+        <div id="conta-display">Carregando missão...</div>
+        <div id="regra-box"></div>
+        <div class="ag" id="grid-botoes"></div>
+        <div id="fb"></div>
 
-        <!-- ENUNCIADO DA QUESTÃO -->
-        <div id="conta-display" aria-live="assertive">Carregando...</div>
-
-        <!-- DICA (regra-box) -->
-        <div id="regra-box" aria-live="polite"></div>
-
-        <!-- BOTÕES DE RESPOSTA -->
-        <div class="ag" id="grid-botoes" role="group" aria-label="Opções de resposta"></div>
-
-        <!-- FEEDBACK -->
-        <div id="fb" aria-live="assertive"></div>
-
-        <!-- DIAGNÓSTICO TÉCNICO (oculto para alunos, visível em dev) -->
-        <div id="diag-status" class="diag-box" aria-live="polite"></div>
-
-        <!-- PRÓXIMO DESAFIO -->
-        <button id="btn-prox" class="hidden" onclick="proximaQ()" tabindex="0">
+        <!-- BOTÃO PRÓXIMO: Restaurado com visibilidade garantida -->
+        <button id="btn-prox" class="btn-start hidden" onclick="proximaQ()">
             PRÓXIMO DESAFIO →
         </button>
-
-    </div><!-- /gw -->
-
+    </div>
 </section>
 
 <!-- ══════════════════════════════════════════
-     AVATAR DO PROF. ALÊ CHOCOLATE
+     MODAIS E AVATAR
 ═══════════════════════════════════════════ -->
-<div id="av" class="hidden" aria-hidden="true">
+<div id="av" class="hidden">
     <img id="av-img" src="assets/img/avatar_estatico.png" alt="Prof. Alê">
-    <video id="vid-ok" class="avh" muted playsinline>
-        <source src="assets/video/avatar_jump.mp4" type="video/mp4">
-    </video>
-    <video id="vid-no" class="avh" muted playsinline>
-        <source src="assets/video/avatar_chute.mp4" type="video/mp4">
-    </video>
+    <video id="vid-ok" class="avh" muted playsinline><source src="assets/video/avatar_jump.mp4" type="video/mp4"></video>
+    <video id="vid-no" class="avh" muted playsinline><source src="assets/video/avatar_chute.mp4" type="video/mp4"></video>
 </div>
 
-<!-- ══════════════════════════════════════════
-     BOTÕES FLUTUANTES (canto superior direito)
-═══════════════════════════════════════════ -->
+<!-- BOTÕES FLUTUANTES SUPERIORES -->
 <div class="btn-top-group">
-    <button class="btn-round" onclick="verPerfilAluno()" title="Meu Perfil">👤</button>
-    <button class="btn-round" onclick="abrirM('mdash')" title="Dashboard BNCC">📊</button>
-    <button class="btn-round" onclick="abrirM('mcred')" title="Sobre o Projeto">i</button>
+    <button class="btn-round" onclick="abrirM('mdash')" title="Relatório">📊</button>
+    <button class="btn-round" onclick="abrirM('mcred')" title="Créditos">i</button>
 </div>
 
-<!-- ══════════════════════════════════════════
-     MODAL: DASHBOARD BNCC
-═══════════════════════════════════════════ -->
-<div id="mdash" class="modal" role="dialog" aria-modal="true" aria-label="Dashboard de desempenho BNCC">
+<!-- MODAL DASHBOARD -->
+<div id="mdash" class="modal">
     <div class="mc">
-        <button class="mx" onclick="fecharM('mdash')" aria-label="Fechar">✕</button>
-        <h2>📊 Dashboard BNCC</h2>
-        <p class="modal-info">Desempenho consolidado por bloco e habilidade BNCC.</p>
+        <button class="mx" onclick="fecharM('mdash')">✕</button>
+        <h2>📊 Dashboard Clínico</h2>
         <div id="dash-content"></div>
-        <button class="btn-start" onclick="exportarRelatorioCSV()"
-            style="background:var(--neon-green);color:#000;margin-top:12px;">
-            📥 Baixar Relatório (CSV)
-        </button>
-        <button class="bc2" onclick="fecharM('mdash')" style="width:100%;margin-top:8px;">
-            Fechar
+        <button class="btn-start" onclick="exportarRelatorioCSV()" style="margin-top:10px;">
+            📥 BAIXAR CSV
         </button>
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     MODAL: CRÉDITOS
-═══════════════════════════════════════════ -->
-<div id="mcred" class="modal" role="dialog" aria-modal="true" aria-label="Créditos do projeto">
+<!-- MODAL CRÉDITOS -->
+<div id="mcred" class="modal">
     <div class="mc">
-        <button class="mx" onclick="fecharM('mcred')" aria-label="Fechar">✕</button>
-        <h2>🔬 Laboratório Tech</h2>
-        <p><strong>Batalha Matemática v6.0</strong></p>
-        <p style="margin-top:10px;">
-            Desenvolvido por <strong>Prof. Alessandro Barbosa (Prof. Alê)</strong><br>
-            EE PEI Prof. Milton de Tolosa — Campinas/SP
-        </p>
-        <p style="margin-top:10px;">
-            Projeto Integrado<br>
-            <strong>Batalha Matemática</strong><br>
-            Parceria: Profa. Josety<br>
-            Parceria: Profa. Alice
-        </p>
-        <p style="margin-top:10px;">
-            Fundamentado nos princípios do<br>
-            <strong>Desenho Universal para a Aprendizagem (DUA)</strong>
-        </p>
-        <p style="margin-top:10px; font-size:13px; color:#888;">
-            Evento: Dia da Matemática — 06 de maio de 2026<br>
-            Homenagem a <strong>Malba Tahan</strong> (Júlio César de Mello e Souza)
-        </p>
-        <button class="btn-start" onclick="fecharM('mcred')" style="margin-top:16px;">
-            Fechar
-        </button>
+        <button class="mx" onclick="fecharM('mcred')">✕</button>
+        <h2>🔬 MathLab v6.1</h2>
+        <p><strong>Desenvolvido por Prof. Alessandro Barbosa</strong></p>
+        <p>Educação Inclusiva e DUA</p>
+        <button class="bc2" onclick="fecharM('mcred')">FECHAR</button>
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     TELA DE CAMPEÃO (GAME OVER / VITÓRIA)
-═══════════════════════════════════════════ -->
-<div id="go" role="dialog" aria-modal="true" aria-label="Resultado da batalha">
+<!-- GAME OVER -->
+<div id="go" class="modal">
     <div class="mc" style="text-align:center;">
-        <h2 style="font-size:clamp(22px,6vw,32px);">🏆 FIM DE BATALHA!</h2>
-        <p id="go-txt" style="font-size:clamp(16px,4vw,22px);margin:16px 0;"></p>
-        <div id="go-stats" style="margin-bottom:16px;"></div>
-        <button class="btn-start" onclick="reiniciar()" style="margin-bottom:10px;">
-            🔁 NOVA BATALHA
-        </button>
-        <button class="bc2" onclick="irParaSeletor()" style="width:100%;">
-            Trocar Bloco
-        </button>
+        <h2>🏆 RESULTADO</h2>
+        <p id="go-txt"></p>
+        <p id="go-st"></p>
+        <button class="btn-start" onclick="reiniciar()">🔁 REINICIAR</button>
+        <button class="bc2" onclick="irParaSeletor()">SAIR</button>
     </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     ÁUDIO
-═══════════════════════════════════════════ -->
-<audio id="bgm" loop>
-    <source src="assets/audio/bgm_base.mp3" type="audio/mpeg">
-</audio>
+<audio id="bgm" loop><source src="assets/audio/bgm_base.mp3" type="audio/mpeg"></audio>
 
-<!-- ══════════════════════════════════════════
-     JAVASCRIPT PRINCIPAL
-═══════════════════════════════════════════ -->
 <script type="module" src="js/main.js"></script>
-
 </body>
 </html>
