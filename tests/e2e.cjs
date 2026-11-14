@@ -61,7 +61,7 @@ const indiceCerto = (p, fonte) => p.evaluate(async (fonte) => {
     ok(await p.locator('#painel-evento .cartao').count() === 5, 'cinco blocos do evento');
     await p.click('.aba[data-aba=assuntos]');
     await p.waitForSelector('#grade-assuntos .cartao');
-    ok(await p.locator('#grade-assuntos .cartao').count() === 90, '90 assuntos do MathLab');
+    ok(await p.locator('#grade-assuntos .cartao').count() === 96, '96 assuntos do MathLab');
     await p.fill('#busca', 'equacao do 2');
     ok(await p.locator('#grade-assuntos .cartao').count() >= 1, 'busca sem acento acha equação do 2º grau');
     await p.fill('#busca', '');

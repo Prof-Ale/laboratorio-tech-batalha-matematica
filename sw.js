@@ -1,9 +1,9 @@
 /* Service worker da Batalha Matemática: deixa o jogo funcionar sem internet depois da primeira visita.
  * Mude VERSAO sempre que trocar arquivos, para os aparelhos pegarem a atualização. */
-const VERSAO = 'batalha-2026-11-13-1';
+const VERSAO = 'batalha-2026-11-14-1';
 const CASCA = [
   './', 'index.html', 'css/style.css',
-  'js/main.js', 'js/banco.js', 'js/batalha.js', 'js/relatorio.js', 'js/audio.js', 'js/icones.js', 'js/reta.js',
+  'js/main.js', 'js/banco.js', 'js/batalha.js', 'js/relatorio.js', 'js/audio.js', 'js/fala.js', 'js/icones.js', 'js/reta.js',
   'js/data/questions/index.js', 'js/data/questions/bloco1.js', 'js/data/questions/bloco2.js',
   'js/data/questions/bloco3.js', 'js/data/questions/bloco4.js', 'js/data/questions/bloco5.js',
   'data/banco/manifesto.json',

@@ -182,6 +182,15 @@ function montarSeries(lista) {
     nota.className = 'contagem';
     nota.textContent = 'Revisão mista: sorteia questões de todos os assuntos da série, um assunto de cada vez.';
     const grade = document.createElement('div'); grade.className = 'grade-cartoes';
+    const base = lista.filter(a => a.ano === 6 || a.ano === 7);
+    if (base.length) {
+        const tb = base.reduce((s, a) => s + Object.values(a.n).reduce((x, y) => x + y, 0), 0);
+        grade.append(cartao({
+            nome: 'Revisão do 6º e 7º anos juntos', sub: `${base.length} assuntos, ${tb} questões`,
+            topoEsq: '6º + 7º', topoDir: 'mista',
+            aoClicar: () => iniciar({ rotulo: 'Revisão do 6º e 7º anos', nivelTxt: null, carregar: () => poolDaSerie([6, 7]) })
+        }));
+    }
     for (const ano of [6, 7, 8, 9, 10, 11, 12]) {
         const assuntos = lista.filter(a => a.ano === ano);
         if (!assuntos.length) continue;

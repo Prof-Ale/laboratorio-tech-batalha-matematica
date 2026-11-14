@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { poolDoBloco, menos, tipoDeErro } from '../js/banco.js';
+import { paraFala } from '../js/fala.js';
 import * as B from '../js/batalha.js';
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,6 +25,12 @@ for (let b = 1; b <= 5; b++) {
 }
 ok(menos('(-3) + 5 = ?') === '(−3) + 5 = ?', 'menos() em parênteses');
 ok(menos('5 - 8') === '5 − 8', 'menos() em subtração');
+
+ok(menos('−0') === '0' && menos('-0,5') === '−0,5' && menos('10 − 0') === '10 − 0', 'menos() não deixa −0');
+const F = [['R$12', '12 reais'], ['R$ 1,00', '1 real'], ['R$ 12,50', '12 reais e 50 centavos'], ['R$ 1.200,05', '1200 reais e 5 centavos'], ['Pagou R$12 e ficou com R$3,5.', 'Pagou 12 reais e ficou com 3 reais e 50 centavos.'],
+  ['25%', '25 por cento'], ['3/4 + 1/2', '3 sobre 4 mais 1 sobre 2'], ['−5 × 3', 'menos 5 vezes 3'], ['10 − 0', '10 menos 0'], ['−0', '0'],
+  ['√81 = 9', 'raiz quadrada de 81 igual a 9'], ['5^3', '5 elevado a 3'], ['2^−3', '2 elevado a −3'.replace('−', 'menos ')], ['área de 12 m²', 'área de 12 metros quadrados'], ['90°', '90 graus'], ['8 ÷ 2', '8 dividido por 2']];
+for (const [e, s] of F) ok(paraFala(e) === s, `paraFala(${e}) = "${paraFala(e)}", esperado "${s}"`);
 
 // 2. Banco do MathLab
 const man = JSON.parse(fs.readFileSync(path.join(raiz, 'data/banco/manifesto.json'), 'utf8')).assuntos;

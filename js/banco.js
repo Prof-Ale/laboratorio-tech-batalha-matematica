@@ -2,7 +2,7 @@
  * js/banco.js
  * Fontes de questões da Batalha.
  *  1) Banco do evento (blocos 1 a 5, em js/data/questions): 280 questões fixas do 6º e 7º anos.
- *  2) Banco do MathLab (data/banco): 90 assuntos do 6º ano ao 3º ano do Ensino Médio.
+ *  2) Banco do MathLab (data/banco): 96 assuntos do 6º ano ao 3º ano do Ensino Médio.
  * As duas fontes são convertidas para o mesmo formato:
  *   { id, q, o[], c, tg[], ms[], h[], e, bncc[], assunto:{id,nome}, nivel }
  */
@@ -31,7 +31,8 @@ export function menos(texto) {
     return String(texto == null ? '' : texto)
         .replace(/(^|[\s(=×÷+*/])-(?=[\d(])/g, '$1−')
         .replace(/\s-\s/g, ' − ')
-        .replace(/(\d)-(?=\(?\d+\)?\s*=)/g, '$1 − ');   // 12-18=−6 vira 12 − 18=−6
+        .replace(/(\d)-(?=\(?\d+\)?\s*=)/g, '$1 − ')
+        .replace(/(^|[\s(])[−-]0(?![\d,.])/g, '$10');   // −0 não existe: é 0   // 12-18=−6 vira 12 − 18=−6
 }
 
 /** Descobre o tipo de erro de uma alternativa errada. */
@@ -117,7 +118,8 @@ export async function poolDoAssunto(id) {
 }
 
 export async function poolDaSerie(ano) {
-    const lista = (await carregarManifesto()).filter(a => a.ano === ano);
+    const anos = [].concat(ano);
+    const lista = (await carregarManifesto()).filter(a => anos.includes(a.ano));
     const todos = await Promise.all(lista.map(a => carregarAssunto(a.id)));
     return todos.flatMap(converterAssunto);
 }

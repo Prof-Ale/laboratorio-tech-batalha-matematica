@@ -1,4 +1,5 @@
 /** Áudio: efeitos, música de fundo e leitura em voz alta (DUA). */
+import { paraFala } from './fala.js';
 const estado = { musica: true, voz: true };
 const bgm = document.getElementById('bgm');
 const cache = {};
@@ -45,7 +46,7 @@ export function falar(texto) {
     try {
         if (!estado.voz || !window.speechSynthesis) return;
         window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(String(texto).replace(/−/g, ' menos ').replace(/\^/g, ' elevado a ').replace(/\s+/g, ' '));
+        const u = new SpeechSynthesisUtterance(paraFala(texto));
         const vozes = window.speechSynthesis.getVoices();
         u.voice = vozes.find(v => v.lang && v.lang.includes('pt-BR')) || vozes[0] || null;
         u.lang = 'pt-BR';
