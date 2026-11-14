@@ -29,10 +29,10 @@ export function rotuloAno(ano) {
 /** Troca o hífen por sinal de menos verdadeiro (−) em contas e números negativos. */
 export function menos(texto) {
     return String(texto == null ? '' : texto)
-        .replace(/(^|[\s(=×÷+*/])-(?=[\d(])/g, '$1−')
+        .replace(/(^|[\s(=×÷+*/])-(?=[\d(]|R\$)/g, '$1−')
         .replace(/\s-\s/g, ' − ')
         .replace(/(\d)-(?=\(?\d+\)?\s*=)/g, '$1 − ')
-        .replace(/(^|[\s(])[−-]0(?![\d,.])/g, '$10');   // −0 não existe: é 0   // 12-18=−6 vira 12 − 18=−6
+        .replace(/(^|[\s(])[−-](R\$\s?)?0(?![\d,.])/g, '$1$20');   // −0 não existe: é 0   // 12-18=−6 vira 12 − 18=−6
 }
 
 /** Descobre o tipo de erro de uma alternativa errada. */

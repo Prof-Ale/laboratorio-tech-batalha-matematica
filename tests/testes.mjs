@@ -32,6 +32,10 @@ const F = [['R$12', '12 reais'], ['R$ 1,00', '1 real'], ['R$ 12,50', '12 reais e
   ['√81 = 9', 'raiz quadrada de 81 igual a 9'], ['5^3', '5 elevado a 3'], ['2^−3', '2 elevado a −3'.replace('−', 'menos ')], ['área de 12 m²', 'área de 12 metros quadrados'], ['90°', '90 graus'], ['8 ÷ 2', '8 dividido por 2']];
 for (const [e, s] of F) ok(paraFala(e) === s, `paraFala(${e}) = "${paraFala(e)}", esperado "${s}"`);
 
+ok(menos('-R$0') === 'R$0' && menos('-R$5') === '−R$5', 'menos() em −R$0');
+ok(paraFala('-R$0') === '0 reais' && paraFala('-R$12') === 'menos 12 reais', 'fala de −R$0 e −R$12');
+ok(poolDoBloco(1).every(q => !q.o.some(o => /^[−-]R\$\s?0$/.test(o))), 'sem −R$0 nas alternativas');
+
 // 2. Banco do MathLab
 const man = JSON.parse(fs.readFileSync(path.join(raiz, 'data/banco/manifesto.json'), 'utf8')).assuntos;
 ok(man.length >= 85, `manifesto com ${man.length} assuntos`);
