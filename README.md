@@ -42,7 +42,7 @@ Demo: https://prof-ale.github.io/laboratorio-tech-batalha-matematica
 
 **Banco do evento.** 280 questões fixas do 6º e do 7º anos, em cinco blocos: inteiros (soma e subtração), múltiplos e divisores, inteiros (multiplicação e divisão), frações, decimais e porcentagem, e MMC e MDC. É o banco usado no Dia da Matemática de 2026. Nas contas de soma e subtração de inteiros, uma reta numérica mostra o ponto de partida e anima o salto depois da resposta.
 
-**Banco do MathLab.** 90 assuntos do 6º ano à 3ª série do Ensino Médio, com 7.824 questões em três níveis. Elas vêm dos geradores do MathLab (https://prof-ale.github.io/MathLab) e trazem, além do enunciado:
+**Banco do MathLab.** 96 assuntos do 6º ano à 3ª série do Ensino Médio, com cerca de 20 mil questões em três níveis. Elas vêm dos geradores do MathLab (https://prof-ale.github.io/MathLab) e trazem, além do enunciado:
 
 * duas dicas em degraus, que o professor libera durante a batalha
 * a explicação do erro de cada alternativa errada
@@ -104,6 +104,7 @@ laboratorio-tech-batalha-matematica/
 ├── assets/                     # imagens, áudio e vídeo do jogo
 ├── material-do-evento/         # infográficos e arquivos originais do evento
 ├── tools/gerar-banco.cjs       # gera data/banco a partir do MathLab
+├── tools/gerar-complemento.cjs # assuntos extras de 6º e 7º (área, média, probabilidade, porcentagem)
 └── tests/                      # testes automáticos
 ```
 
@@ -124,7 +125,8 @@ Depois abra http://localhost:8000.
 Quando o MathLab ganhar assuntos ou questões novas, gere o banco de novo. Precisa do Node e do pacote `playwright` com o Chromium:
 
 ```
-node tools/gerar-banco.cjs ../MathLab/index.html
+node tools/gerar-banco.cjs ../MathLab/index.html --por-gerador=20
+node tools/gerar-complemento.cjs
 ```
 
 O script sorteia vários exemplos de cada gerador (8 por gerador, ajustável com `--por-gerador=`), tira as repetidas e as que dependem de figura, troca o hífen pelo sinal de menos e grava um arquivo por assunto em `data/banco/`. Depois, rode os testes e mude a `VERSAO` do `sw.js`.
