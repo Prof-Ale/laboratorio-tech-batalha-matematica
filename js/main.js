@@ -1,426 +1,733 @@
 /**
- * js/main.js - Orquestrador Geral v6.1
- * Batalha Matemática: 7ºA vs 7ºB — Dia da Matemática 2026
- * Correções: abrirM/fecharM, finalizarBatalha via modal, voltarAoSplash
+ * js/main.js: telas e eventos da Batalha Matemática (v7.0).
+ * As regras ficam em batalha.js, os dados em banco.js e o relatório em relatorio.js.
  */
-
-import { G, salvarProgresso, carregarProgresso } from './engine/gameState.js';
-import { selQ } from './engine/selector.js';
+import { ICONES } from './icones.js';
+import * as B from './batalha.js';
 import {
-    renderHUD,
-    falarAda,
-    mostrarModal,
-    atualizarAvatar,
-    tocarSFX,
-    toggleMusica,
-    toggleVoz,
-    exportarCSV
-} from './ui-manager.js';
+    poolDoBloco, poolDoAssunto, poolDaSerie, carregarManifesto,
+    BLOCOS, EIXOS, EIXO_COR, rotuloAno
+} from './banco.js';
+import * as R from './relatorio.js';
+import { sfx, tocarMusica, pararMusica, alternarMusica, alternarVoz, falar, calarVoz, audioEstado } from './audio.js';
+import { lerConta, desenharReta, animarSalto } from './reta.js';
 
-// ── Estado da Batalha ─────────────────────────────────────
-let scoreA = 0, scoreB = 0;
-let turnoAtual = 'A';
-let rodadaAtual = 1;
-let modoBuzzer = false;
-let buzzerAtivo = null;
-let historicoGlobal = new Set();
+const $ = (id) => document.getElementById(id);
+const CHAVE_CFG = 'labtech_v7_cfg';
 
-// ── Inicialização ─────────────────────────────────────────
-carregarProgresso();
+/* ── Configuração (lembrada entre as visitas) ───────────── */
+let cfg = { ...B.PADRAO };
+try { Object.assign(cfg, JSON.parse(localStorage.getItem(CHAVE_CFG) || '{}')); } catch (e) { /* segue com o padrão */ }
+const salvarCfg = () => { try { localStorage.setItem(CHAVE_CFG, JSON.stringify(cfg)); } catch (e) {} };
 
-// ═════════════════════════════════════════════════════════
-// 1. SPLASH SCREEN
-// ═════════════════════════════════════════════════════════
-window.mostrarSeletorBlocos = () => {
-    const nomeInput = document.getElementById('nome-cientista');
-    G.nome = nomeInput.value.trim().toUpperCase() || 'CIENTISTA MASTER';
+/* ── Estado da batalha em andamento ─────────────────────── */
+let partida = null;
+let fonteAtual = null;       // { tipo, rotulo, carregar() }
+let dicasUsadas = 0;
+let respondeu = false;
+let buzzer = null;           // 'A' ou 'B' quando alguém apertou
+let cronometro = null;
+let tempoRestante = 0;
+let errosDaPartida = {};
+let musicaFinal = false;
 
-    document.getElementById('splash-screen').classList.add('hidden');
-    document.getElementById('block-selector').classList.remove('hidden');
-    tocarSFX('sfx_start');
-    salvarProgresso();
-};
-
-window.voltarAoSplash = () => {
-    document.getElementById('block-selector').classList.add('hidden');
-    document.getElementById('splash-screen').classList.remove('hidden');
-};
-
-// ═════════════════════════════════════════════════════════
-// 2. SELETOR DE BLOCOS
-// ═════════════════════════════════════════════════════════
-window.iniciarBloco = (id) => {
-    G.blocoAtivo = id;
-    scoreA = 0;
-    scoreB = 0;
-    rodadaAtual = 1;
-    buzzerAtivo = null;
-    G.combo = 0;
-    G.acertos = 0;
-    G.erros = 0;
-    historicoGlobal.clear();
-
-    atualizarPlacarVisual();
-
-    document.getElementById('block-selector').classList.add('hidden');
-    document.getElementById('game-screen').classList.remove('hidden');
-
-    // Mostra avatar
-    const av = document.getElementById('av');
-    if (av) av.classList.remove('hidden');
-
-    // BGM
-    const bgm = document.getElementById('bgm');
-    if (bgm && G.musica) bgm.play().catch(() => {});
-
-    proximaQ();
-};
-
-window.irParaSeletor = () => {
-    document.getElementById('game-screen').classList.add('hidden');
-    document.getElementById('go').classList.remove('show');
-    document.getElementById('block-selector').classList.remove('hidden');
-};
-
-// ═════════════════════════════════════════════════════════
-// 3. MOTOR DE QUESTÕES
-// ═════════════════════════════════════════════════════════
-window.proximaQ = () => {
-    // Sorteio com bloqueio absoluto de repetição
-    let q = selQ(G.blocoAtivo);
-    let tentativas = 0;
-    while (historicoGlobal.has(q.id) && tentativas < 80) {
-        q = selQ(G.blocoAtivo);
-        tentativas++;
+/** Escreve texto seguro no elemento, trocando ^n por expoente (sobrescrito). */
+function escrever(el, texto) {
+    el.textContent = '';
+    const re = /\^(\([^)]*\)|[−-]?(?:\d+|[a-z]))/g;
+    let i = 0, m;
+    const t = String(texto);
+    while ((m = re.exec(t))) {
+        if (m.index > i) el.append(t.slice(i, m.index));
+        const sup = document.createElement('sup');
+        sup.textContent = m[1].replace(/^\(|\)$/g, '');
+        el.append(sup);
+        i = m.index + m[0].length;
     }
-    // Se esgotou todas as questões do bloco, reseta o histórico do bloco
-    if (tentativas >= 80) historicoGlobal.clear();
-
-    historicoGlobal.add(q.id);
-    G.questaoAtual = q;
-    G.respondeu = false;
-
-    // Renderiza enunciado
-    document.getElementById('conta-display').innerHTML = `<span>${q.display}</span>`;
-
-    // Renderiza dica
-    const regra = document.getElementById('regra-box');
-    if (regra) regra.innerHTML = q.dica || '';
-
-    // Gera botões embaralhados
-    gerarBotoes(shuffled([...q.botoes]));
-
-    // Limpa feedback
-    renderHUD(null);
-
-    // Atualiza indicador de turno
-    atualizarIndicadorTurno();
-
-    // Voz (DUA)
-    if (G.voz) falarAda(q.dica || q.display);
-};
-
-function shuffled(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
+    if (i < t.length) el.append(t.slice(i));
+    return el;
 }
 
-function gerarBotoes(opcoes) {
-    const container = document.getElementById('grid-botoes');
-    container.innerHTML = '';
+/* ── Navegação ──────────────────────────────────────────── */
+function mostrarTela(id) {
+    for (const t of document.querySelectorAll('.tela')) t.classList.toggle('oculto', t.id !== id);
+    const alvo = $(id);
+    if (alvo) alvo.scrollTop = 0;
+}
 
-    container.style.gridTemplateColumns = opcoes.length <= 3
-        ? `repeat(${opcoes.length}, 1fr)`
-        : '1fr 1fr';
+function abrirModal(id) {
+    const m = $(id);
+    if (!m) return;
+    m.classList.add('aberto');
+    if (id === 'm-relatorio') desenharRelatorio();
+    const foco = m.querySelector('button, select');
+    if (foco) foco.focus();
+}
+function fecharModal(m) { (typeof m === 'string' ? $(m) : m).classList.remove('aberto'); }
+const modalAberto = () => document.querySelector('.modal.aberto');
 
-    opcoes.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.className = 'ba';
-        btn.textContent = opt;
-        btn.setAttribute('tabindex', '0');
-        btn.onclick = () => {
-            // Modo buzzer: bloqueia até uma turma acionar
-            if (modoBuzzer && buzzerAtivo === null) {
-                const fb = document.getElementById('fb');
-                if (fb) {
-                    fb.style.color = 'var(--neon-yellow)';
-                    fb.innerHTML = '⏳ Aperte <strong>[A]</strong> ou <strong>[B]</strong> no teclado primeiro!';
-                }
-                return;
-            }
-            verificarResposta(opt);
-        };
-        container.appendChild(btn);
+/* ── Início ─────────────────────────────────────────────── */
+function iniciarIcones() {
+    document.querySelectorAll('[data-abrir="m-relatorio"]').forEach(b => b.innerHTML = ICONES.relatorio);
+    document.querySelectorAll('[data-abrir="m-creditos"]').forEach(b => b.innerHTML = ICONES.info);
+    $('btn-musica').innerHTML = ICONES.musica;
+    $('btn-voz').innerHTML = ICONES.voz;
+    $('btn-tela').innerHTML = ICONES.tela;
+}
+
+$('nome-a').value = cfg.nomeA;
+$('nome-b').value = cfg.nomeB;
+$('form-times').addEventListener('submit', (e) => {
+    e.preventDefault();
+    cfg.nomeA = $('nome-a').value.trim() || 'Turma A';
+    cfg.nomeB = $('nome-b').value.trim() || 'Turma B';
+    if (cfg.nomeA.toLowerCase() === cfg.nomeB.toLowerCase()) cfg.nomeB += ' (2)';
+    salvarCfg();
+    sfx('sfx_start');
+    mostrarTela('tela-central');
+    prepararCentral();
+});
+$('voltar-inicio').addEventListener('click', () => mostrarTela('tela-inicio'));
+
+/* ── Central: regras e escolha do assunto ───────────────── */
+function marcarSeg() {
+    document.querySelectorAll('.seg[data-cfg]').forEach(seg => {
+        const chave = seg.dataset.cfg;
+        seg.querySelectorAll('button').forEach(b => {
+            const ativo = String(cfg[chave]) === b.dataset.v;
+            b.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+        });
     });
 }
+document.querySelectorAll('.seg[data-cfg] button').forEach(b => {
+    b.addEventListener('click', () => {
+        const chave = b.parentElement.dataset.cfg;
+        const v = b.dataset.v;
+        cfg[chave] = (chave === 'meta' || chave === 'tempo') ? Number(v)
+            : (chave === 'nivel' && v !== 'prog') ? Number(v) : v;
+        salvarCfg();
+        marcarSeg();
+    });
+});
 
-// ═════════════════════════════════════════════════════════
-// 4. LÓGICA DE BATALHA E PONTUAÇÃO
-// ═════════════════════════════════════════════════════════
-function verificarResposta(escolha) {
-    if (G.respondeu) return;
-    G.respondeu = true;
+document.querySelectorAll('.aba').forEach(a => {
+    a.addEventListener('click', () => {
+        document.querySelectorAll('.aba').forEach(x => {
+            const on = x === a;
+            x.classList.toggle('ativa', on);
+            x.setAttribute('aria-selected', on ? 'true' : 'false');
+            $('painel-' + x.dataset.aba).classList.toggle('oculto', !on);
+        });
+    });
+});
 
-    const q = G.questaoAtual;
-    const acerto = Array.isArray(q.res)
-        ? q.res.map(String).includes(String(escolha))
-        : String(escolha) === String(q.res);
+function cartao({ nome, sub, topoEsq, topoDir, eixo, aoClicar }) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'cartao' + (eixo ? ' eixo-' + EIXO_COR[eixo] : '');
+    const topo = document.createElement('span'); topo.className = 'c-topo';
+    const e = document.createElement('span'); e.textContent = topoEsq || '';
+    const d = document.createElement('span'); d.textContent = topoDir || '';
+    topo.append(e, d);
+    const n = document.createElement('span'); n.className = 'c-nome';
+    if (eixo) { const p = document.createElement('i'); p.className = 'c-ponto'; n.append(p); }
+    n.append(nome);
+    const s = document.createElement('span'); s.className = 'c-sub'; s.textContent = sub || '';
+    b.append(topo, n, s);
+    b.addEventListener('click', aoClicar);
+    return b;
+}
 
-    // Destaca botões
-    document.querySelectorAll('.ba').forEach(b => {
-        b.classList.add('dis');
-        const resArr = Array.isArray(q.res) ? q.res.map(String) : [String(q.res)];
-        if (resArr.includes(b.textContent)) b.classList.add('ok');
-        if (b.textContent === String(escolha) && !acerto) b.classList.add('no');
+let manifestoCarregado = false;
+async function prepararCentral() {
+    marcarSeg();
+    // Recomposição (banco do evento)
+    const pe = $('painel-evento');
+    if (!pe.childElementCount) {
+        const nota = document.createElement('p');
+        nota.className = 'contagem';
+        nota.textContent = 'Banco do evento: 280 questões fixas do 6º e 7º anos, sem níveis de dificuldade.';
+        const grade = document.createElement('div'); grade.className = 'grade-cartoes';
+        for (const [n, bl] of Object.entries(BLOCOS)) {
+            const total = poolDoBloco(n).length;
+            grade.append(cartao({
+                nome: `Bloco ${n}: ${bl.nome}`, sub: `${total} questões`,
+                topoEsq: rotuloAno(bl.ano), topoDir: 'evento', eixo: 'Números',
+                aoClicar: () => iniciar({
+                    rotulo: `Bloco ${n}: ${bl.nome}`, nivelTxt: 'Banco do evento',
+                    carregar: async () => poolDoBloco(n)
+                })
+            }));
+        }
+        pe.append(nota, grade);
+    }
+    if (manifestoCarregado) return;
+    try {
+        const lista = await carregarManifesto();
+        manifestoCarregado = true;
+        $('erro-central').classList.add('oculto');
+        montarSeries(lista);
+        montarAssuntos(lista);
+    } catch (e) {
+        const er = $('erro-central');
+        er.textContent = 'Não consegui carregar os assuntos do MathLab. O banco do evento continua disponível. Abra o jogo por um endereço da internet (GitHub Pages) ou por um servidor local.';
+        er.classList.remove('oculto');
+    }
+}
+
+function montarSeries(lista) {
+    const ps = $('painel-serie');
+    ps.textContent = '';
+    const nota = document.createElement('p');
+    nota.className = 'contagem';
+    nota.textContent = 'Revisão mista: sorteia questões de todos os assuntos da série, um assunto de cada vez.';
+    const grade = document.createElement('div'); grade.className = 'grade-cartoes';
+    for (const ano of [6, 7, 8, 9, 10, 11, 12]) {
+        const assuntos = lista.filter(a => a.ano === ano);
+        if (!assuntos.length) continue;
+        const total = assuntos.reduce((s, a) => s + Object.values(a.n).reduce((x, y) => x + y, 0), 0);
+        grade.append(cartao({
+            nome: `Revisão do ${rotuloAno(ano)}`, sub: `${assuntos.length} assuntos, ${total} questões`,
+            topoEsq: rotuloAno(ano), topoDir: 'mista',
+            aoClicar: () => iniciar({
+                rotulo: `Revisão do ${rotuloAno(ano)}`, nivelTxt: null,
+                carregar: () => poolDaSerie(ano)
+            })
+        }));
+    }
+    ps.append(nota, grade);
+}
+
+const semAcento = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const filtro = { q: '', ano: 0, eixo: '' };
+
+function montarAssuntos(lista) {
+    const chips = (alvo, itens, chave, rotulo) => {
+        alvo.textContent = '';
+        for (const [valor, texto] of itens) {
+            const b = document.createElement('button');
+            b.type = 'button'; b.textContent = texto;
+            b.setAttribute('aria-pressed', String(filtro[chave] === valor));
+            b.addEventListener('click', () => {
+                filtro[chave] = valor;
+                alvo.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+                b.setAttribute('aria-pressed', 'true');
+                desenhar();
+            });
+            alvo.append(b);
+        }
+    };
+    chips($('filtro-serie'), [[0, 'Todas as séries'], ...[6, 7, 8, 9, 10, 11, 12].map(a => [a, rotuloAno(a)])], 'ano');
+    chips($('filtro-eixo'), [['', 'Todos os eixos'], ...EIXOS.map(e => [e, e])], 'eixo');
+    $('busca').addEventListener('input', (e) => { filtro.q = semAcento(e.target.value); desenhar(); });
+
+    function desenhar() {
+        const grade = $('grade-assuntos');
+        grade.textContent = '';
+        const achados = lista.filter(a =>
+            (!filtro.ano || a.ano === filtro.ano) &&
+            (!filtro.eixo || a.eixo === filtro.eixo) &&
+            (!filtro.q || semAcento([a.nome, a.sub, a.eixo, rotuloAno(a.ano), ...(a.bncc || [])].join(' ')).includes(filtro.q)));
+        $('contagem-assuntos').textContent = `${achados.length} de ${lista.length} assuntos`;
+        for (const a of achados) {
+            const total = Object.values(a.n).reduce((x, y) => x + y, 0);
+            grade.append(cartao({
+                nome: a.nome, sub: a.sub || '', eixo: a.eixo,
+                topoEsq: rotuloAno(a.ano), topoDir: `${total} questões`,
+                aoClicar: () => iniciar({
+                    rotulo: a.nome, nivelTxt: null, bncc: a.bncc,
+                    carregar: () => poolDoAssunto(a.id)
+                })
+            }));
+        }
+    }
+    desenhar();
+}
+
+/* ── Início da batalha ──────────────────────────────────── */
+async function iniciar(fonte) {
+    fonteAtual = fonte;
+    let pool;
+    try {
+        $('erro-central').classList.add('oculto');
+        pool = await fonte.carregar();
+    } catch (e) {
+        const er = $('erro-central');
+        er.textContent = 'Não consegui carregar as questões. Confira a internet e tente de novo.';
+        er.classList.remove('oculto');
+        return;
+    }
+    if (!pool.length) return;
+    partida = B.criarPartida(cfg, pool);
+    errosDaPartida = {};
+    musicaFinal = false;
+    buzzer = null;
+    $('chip-assunto').textContent = fonte.rotulo;
+    $('chip-bncc').textContent = (fonte.bncc || []).slice(0, 2).join(' · ');
+    $('chip-bncc').classList.toggle('oculto', !(fonte.bncc || []).length);
+    $('btn-modo').classList.remove('oculto');
+    $('btn-musica').innerHTML = audioEstado.musica ? ICONES.musica : ICONES.mudo;
+    $('btn-musica').setAttribute('aria-pressed', String(audioEstado.musica));
+    $('btn-voz').innerHTML = audioEstado.voz ? ICONES.voz : ICONES.vozOff;
+    $('btn-voz').setAttribute('aria-pressed', String(audioEstado.voz));
+    $('nome-placar-a').textContent = partida.times.A.nome;
+    $('nome-placar-b').textContent = partida.times.B.nome;
+    mostrarTela('tela-jogo');
+    tocarMusica('bgm_base');
+    sfx('sfx_transition');
+    proximaRodada();
+}
+
+function rotuloModo() {
+    return partida.cfg.modo === 'buzzer' ? 'Modo: buzzer (A e B)' : 'Modo: alternado';
+}
+
+/* ── Rodada ─────────────────────────────────────────────── */
+function proximaRodada() {
+    const q = B.sortear(partida);
+    dicasUsadas = 0;
+    respondeu = false;
+    buzzer = null;
+    escrever($('enunciado'), q.q);
+    $('dicas').textContent = '';
+    $('retorno').textContent = '';
+    $('retorno').className = 'retorno';
+    $('btn-prox').classList.add('oculto');
+    $('btn-modo').textContent = rotuloModo();
+    const btnDica = $('btn-dica');
+    btnDica.classList.toggle('oculto', q.h.length === 0);
+    btnDica.disabled = false;
+    atualizarBotaoDica();
+
+    // chip de nível
+    const nv = $('chip-nivel');
+    const txt = q.nivel ? `Nível ${q.nivel}` : (fonteAtual.nivelTxt || '');
+    nv.textContent = txt; nv.classList.toggle('oculto', !txt);
+    // chip do assunto na revisão mista
+    $('chip-assunto').textContent = fonteAtual.nivelTxt ? fonteAtual.rotulo : `${fonteAtual.rotulo}${q.assunto.nome !== fonteAtual.rotulo ? ' · ' + q.assunto.nome : ''}`;
+    if (!fonteAtual.bncc || !fonteAtual.bncc.length) {
+        const bn = $('chip-bncc');
+        bn.textContent = (q.bncc || []).slice(0, 2).join(' · ');
+        bn.classList.toggle('oculto', !(q.bncc || []).length);
+    }
+
+    // alternativas
+    const alts = $('alternativas');
+    alts.textContent = '';
+    q.o.forEach((texto, i) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'alt'; b.dataset.i = String(i);
+        const n = document.createElement('span'); n.className = 'num'; n.textContent = String(i + 1);
+        const t = document.createElement('span'); t.className = 'txt'; escrever(t, texto);
+        b.append(n, t);
+        b.addEventListener('click', () => escolher(i));
+        alts.append(b);
     });
 
-    // Registra no histórico BNCC
-    registrarBNCC(q, acerto, escolha);
+    // reta numérica (só nas contas simples do banco do evento)
+    const canvas = $('reta');
+    const conta = q.reta ? lerConta(q.q) : null;
+    canvas.classList.toggle('oculto', !conta);
+    if (conta) { canvas._conta = conta; desenharReta(canvas, conta, 0); }
 
-    if (acerto) {
-        G.acertos++;
-        G.combo++;
-        if (G.combo % 5 === 0) G.nivel++;
+    atualizarPlacar();
+    atualizarFaixas();
+    iniciarCronometro();
+    if (audioEstado.voz) falar(`${q.q}. ${q.o.map((o, i) => `Opção ${i + 1}: ${o}`).join('. ')}`);
+}
 
-        const turma = modoBuzzer ? buzzerAtivo : turnoAtual;
-        const pts = calcularPontos();
+function atualizarFaixas() {
+    const f = $('faixa-especial');
+    let txt = '';
+    if (B.ehRodadaEspecial(partida)) txt = 'Rodada especial: pontos em dobro';
+    else if (B.emFaseFinal(partida)) txt = 'Desafio final: pontos +50%';
+    f.textContent = txt;
+    f.classList.toggle('oculto', !txt);
+    $('rodada').textContent = `Rodada ${partida.rodada}`;
+    $('rodada').classList.toggle('especial', B.ehRodadaEspecial(partida));
+    if (B.emFaseFinal(partida) && !musicaFinal) { musicaFinal = true; tocarMusica('bgm_final'); }
+}
 
-        if (turma === 'A') { scoreA += pts; turnoAtual = 'B'; }
-        else               { scoreB += pts; turnoAtual = 'A'; }
-
-        tocarSFX('sfx_correct');
-        atualizarAvatar('ok');
-        renderHUD(true, q.passo, pts, turma);
+function atualizarAvisoTurno() {
+    const av = $('aviso-turno');
+    av.textContent = '';
+    if (respondeu) return;
+    if (partida.cfg.modo === 'buzzer') {
+        if (!buzzer) { av.textContent = 'Aperte A ou B no teclado para responder'; return; }
+        const t = partida.times[buzzer];
+        const b = document.createElement('b'); b.textContent = t.nome;
+        b.style.setProperty('--c', buzzer === 'A' ? 'var(--a)' : 'var(--b)');
+        av.append('Vez da turma ', b);
     } else {
-        G.erros++;
-        G.combo = 0;
-
-        if (!modoBuzzer) turnoAtual = (turnoAtual === 'A') ? 'B' : 'A';
-
-        tocarSFX('sfx_wrong');
-        atualizarAvatar('no');
-        renderHUD(false, q.passo, 0, null);
-    }
-
-    buzzerAtivo = null;
-    rodadaAtual++;
-    atualizarPlacarVisual();
-    salvarProgresso();
-
-    // Verifica vitória
-    if (scoreA >= 250 || scoreB >= 250) {
-        setTimeout(finalizarBatalha, 1200);
+        const t = partida.times[partida.turno];
+        const b = document.createElement('b'); b.textContent = t.nome;
+        b.style.setProperty('--c', partida.turno === 'A' ? 'var(--a)' : 'var(--b)');
+        av.append('Vez da turma ', b);
     }
 }
 
-function calcularPontos() {
-    const combo = Math.min(G.combo * 5, 15);
-    const especial = (rodadaAtual % 5 === 0) ? 2 : 1; // rodada especial dobra
-    const final = (scoreA >= 180 || scoreB >= 180) ? 1.5 : 1; // desafio final +50%
-    return Math.round((10 + combo) * especial * final);
+function atualizarPlacar() {
+    const { A, B: TB } = partida.times;
+    $('pts-a').textContent = A.pts;
+    $('pts-b').textContent = TB.pts;
+    $('combo-a').textContent = A.combo >= 2 ? `Combo ×${A.combo}` : '';
+    $('combo-b').textContent = TB.combo >= 2 ? `Combo ×${TB.combo}` : '';
+    const meta = partida.cfg.meta;
+    $('meta-a').style.width = Math.min(100, 50 * A.pts / meta) + '%';
+    $('meta-b').style.width = Math.min(100, 50 * TB.pts / meta) + '%';
+    $('meta-txt').textContent = `Meta: ${meta} pontos`;
+    const vez = partida.cfg.modo === 'buzzer' ? buzzer : partida.turno;
+    $('time-a').classList.toggle('vez', !respondeu && vez === 'A');
+    $('time-b').classList.toggle('vez', !respondeu && vez === 'B');
+    atualizarAvisoTurno();
 }
 
-function registrarBNCC(q, acerto, escolha) {
-    if (!q.bncc) return;
-    if (!G.historico[q.bncc]) {
-        G.historico[q.bncc] = {
-            desc: q.bncc_desc || q.bncc,
-            acertos: 0, erros_sinal: 0, erros_calculo: 0,
-            bloco: G.blocoAtivo
-        };
+/* ── Cronômetro ─────────────────────────────────────────── */
+function pararCronometro() { clearInterval(cronometro); cronometro = null; }
+
+function iniciarCronometro() {
+    pararCronometro();
+    const t = $('tempo');
+    const limite = partida.cfg.tempo;
+    t.classList.toggle('oculto', !limite);
+    if (!limite) return;
+    tempoRestante = limite;
+    t.classList.remove('curto');
+    const desenhar = () => {
+        $('tempo-barra').style.width = (100 * tempoRestante / limite) + '%';
+        $('tempo-seg').textContent = Math.ceil(tempoRestante) + ' s';
+        t.classList.toggle('curto', tempoRestante <= 5);
+    };
+    desenhar();
+    let ultimoInteiro = Math.ceil(tempoRestante);
+    cronometro = setInterval(() => {
+        tempoRestante = Math.max(0, tempoRestante - 0.1);
+        desenhar();
+        const inteiro = Math.ceil(tempoRestante);
+        if (inteiro !== ultimoInteiro && inteiro <= 5 && inteiro > 0) sfx('sfx_tick');
+        ultimoInteiro = inteiro;
+        if (tempoRestante <= 0) { pararCronometro(); tempoEsgotado(); }
+    }, 100);
+}
+
+function tempoEsgotado() {
+    if (respondeu) return;
+    if (partida.cfg.modo === 'buzzer' && !buzzer) {
+        // ninguém apertou: revela e passa a rodada, sem pontos
+        respondeu = true;
+        B.pularRodada(partida);
+        revelar(null, { acerto: false, pts: 0, tag: null, explicacao: null, semResposta: true, ninguem: true });
+        return;
     }
-    const h = G.historico[q.bncc];
-    if (acerto) {
-        h.acertos++;
+    finalizarResposta(-1);
+}
+
+/* ── Respostas ──────────────────────────────────────────── */
+function atualizarBotaoDica() {
+    const q = partida.atual;
+    const b = $('btn-dica');
+    const restam = q.h.length - dicasUsadas;
+    b.disabled = respondeu || restam <= 0;
+    b.textContent = restam > 0
+        ? `Pedir ${dicasUsadas ? 'outra dica' : 'dica'} (−${B.PENALIDADE_DICA} pts)`
+        : 'Sem mais dicas';
+}
+
+$('btn-dica').addEventListener('click', () => {
+    if (respondeu) return;
+    const q = partida.atual;
+    if (dicasUsadas >= q.h.length) return;
+    const p = document.createElement('p');
+    p.className = 'dica';
+    escrever(p, `Dica ${dicasUsadas + 1}: ${q.h[dicasUsadas]}`);
+    $('dicas').append(p);
+    dicasUsadas += 1;
+    atualizarBotaoDica();
+    sfx('sfx_point');
+    if (audioEstado.voz) falar(q.h[dicasUsadas - 1]);
+});
+
+function escolher(indice) {
+    if (respondeu || !partida) return;
+    if (partida.cfg.modo === 'buzzer' && !buzzer) {
+        $('aviso-turno').textContent = 'Primeiro, uma turma aperta A ou B no teclado';
+        return;
+    }
+    finalizarResposta(indice);
+}
+
+function finalizarResposta(indice) {
+    if (respondeu) return;
+    respondeu = true;
+    pararCronometro();
+    const chave = partida.cfg.modo === 'buzzer' ? buzzer : partida.turno;
+    const q = partida.atual;
+    const r = B.responder(partida, { chave, indice, dicas: dicasUsadas });
+    const time = partida.times[chave];
+    R.registrar({
+        turma: time.nome, assuntoId: q.assunto.id, assunto: q.assunto.nome,
+        bncc: q.bncc, acerto: r.acerto, tag: r.tag, dicas: dicasUsadas
+    });
+    if (r.tag) errosDaPartida[r.tag] = (errosDaPartida[r.tag] || 0) + 1;
+    revelar(indice, r);
+}
+
+function revelar(indice, r) {
+    const q = partida.atual;
+    document.querySelectorAll('.alt').forEach(b => {
+        const i = Number(b.dataset.i);
+        b.disabled = true;
+        if (i === q.c) {
+            b.classList.add('certa');
+            const s = document.createElement('span'); s.className = 'selo-res'; s.textContent = '✔ certa';
+            b.append(s);
+        } else if (i === indice) {
+            b.classList.add('errada');
+            const s = document.createElement('span'); s.className = 'selo-res'; s.textContent = '✖ sua resposta';
+            b.append(s);
+        }
+    });
+    $('btn-dica').disabled = true;
+
+    const ret = $('retorno');
+    ret.textContent = '';
+    const res = document.createElement('div'); res.className = 'res';
+    if (r.acerto) {
+        const nome = partida.times[r.chave].nome;
+        res.textContent = `Certo! +${r.pts} pontos para ${nome}`;
+        ret.className = 'retorno ok';
+        sfx('sfx_correct');
+        animar('vid-ok');
+        const alvo = $(r.chave === 'A' ? 'time-a' : 'time-b');
+        alvo.classList.remove('pulso'); void alvo.offsetWidth; alvo.classList.add('pulso');
+    } else if (r.ninguem) {
+        res.textContent = 'Ninguém apertou a tempo. Veja a resposta.';
+        ret.className = 'retorno no';
+        sfx('sfx_wrong');
     } else {
-        // Diferencia erro de sinal de erro de cálculo
-        const resNum = Number(q.res);
-        const escolhaNum = Number(escolha);
-        if (!isNaN(resNum) && !isNaN(escolhaNum) && escolhaNum === -resNum) {
-            h.erros_sinal++;
-        } else {
-            h.erros_calculo++;
-        }
+        res.textContent = r.semResposta ? 'O tempo acabou.' : 'Não foi dessa vez.';
+        ret.className = 'retorno no';
+        sfx('sfx_wrong');
+        animar('vid-no');
     }
-}
-
-// ═════════════════════════════════════════════════════════
-// 5. PLACAR E INDICADORES VISUAIS
-// ═════════════════════════════════════════════════════════
-function atualizarPlacarVisual() {
-    document.getElementById('scoreA').textContent = scoreA;
-    document.getElementById('scoreB').textContent = scoreB;
-    document.getElementById('tcb').textContent = G.combo;
-
-    const elNv = document.getElementById('tnv');
-    if (elNv) elNv.textContent = G.nivel;
-
-    const elAc = document.getElementById('tac');
-    if (elAc) elAc.textContent = G.acertos;
-
-    const elEr = document.getElementById('ter');
-    if (elEr) elEr.textContent = G.erros;
-
-    // Destaque do time da vez
-    const boxA = document.getElementById('box-a');
-    const boxB = document.getElementById('box-b');
-    const turma = modoBuzzer ? (buzzerAtivo || 'none') : turnoAtual;
-    if (boxA) boxA.classList.toggle('ativo', turma === 'A');
-    if (boxB) boxB.classList.toggle('ativo', turma === 'B');
-
-    // Animação de pulso no scoreboard
-    const sb = document.getElementById('scoreboard-battle');
-    if (sb) {
-        sb.classList.remove('score-pulse');
-        void sb.offsetWidth;
-        sb.classList.add('score-pulse');
+    ret.append(res);
+    if (r.tag && !r.semResposta) {
+        const tp = document.createElement('span'); tp.className = 'tipo'; tp.textContent = `Tipo de erro: ${r.tag}`;
+        ret.append(tp);
     }
-}
+    if (r.explicacao) { const p = document.createElement('p'); escrever(p, r.explicacao); ret.append(p); }
+    if (q.e) { const p = document.createElement('p'); escrever(p, `Resolução: ${q.e}`); ret.append(p); }
 
-function atualizarIndicadorTurno() {
-    const fb = document.getElementById('fb');
-    if (!fb) return;
-    if (modoBuzzer && buzzerAtivo === null) {
-        fb.style.color = 'var(--neon-cyan)';
-        fb.innerHTML = `⚔️ Rodada ${rodadaAtual} — Aperte <strong>[A]</strong> ou <strong>[B]</strong>`;
+    const canvas = $('reta');
+    if (!canvas.classList.contains('oculto') && canvas._conta) animarSalto(canvas, canvas._conta);
+
+    atualizarPlacar();
+    atualizarFaixas();
+    $('aviso-turno').textContent = '';
+
+    if (audioEstado.voz) {
+        const fala = r.acerto ? `Certo. ${q.e || ''}` : `${r.semResposta ? 'O tempo acabou.' : 'Resposta errada.'} ${r.explicacao || ''} ${q.e || ''}`;
+        falar(fala);
+    }
+
+    if (partida.encerrada) {
+        $('btn-prox').classList.add('oculto');
+        setTimeout(mostrarFim, 1800);
     } else {
-        const turma = modoBuzzer ? buzzerAtivo : turnoAtual;
-        fb.style.color = 'var(--neon-cyan)';
-        fb.innerHTML = `⚔️ Rodada ${rodadaAtual} — Vez do <strong>7º${turma}</strong>`;
+        $('btn-prox').classList.remove('oculto');
+        $('btn-prox').focus({ preventScroll: true });
     }
 }
 
-// ═════════════════════════════════════════════════════════
-// 6. FINALIZAÇÃO DA BATALHA
-// ═════════════════════════════════════════════════════════
-const NOMES_BLOCOS = {
-    1: "Inteiros: Soma e Subtração",
-    2: "Múltiplos e Divisores",
-    3: "Inteiros: Multiplicação e Divisão",
-    4: "Frações, Decimais e Porcentagem",
-    5: "MMC e MDC"
-};
-const TOTAL_BLOCOS = 5;
-const META_PONTOS = 250;
+$('btn-prox').addEventListener('click', () => { if (partida && !partida.encerrada) proximaRodada(); });
 
-function finalizarBatalha() {
-    const vencedor = scoreA >= scoreB ? '7ºA' : '7ºB';
-    const blocoAtual = G.blocoAtivo;
-    const proximoBloco = blocoAtual < TOTAL_BLOCOS ? blocoAtual + 1 : null;
+$('btn-modo').addEventListener('click', () => {
+    partida.cfg.modo = partida.cfg.modo === 'buzzer' ? 'alternado' : 'buzzer';
+    cfg.modo = partida.cfg.modo;
+    salvarCfg();
+    buzzer = null;
+    $('btn-modo').textContent = rotuloModo();
+    atualizarPlacar();
+});
 
-    const go = document.getElementById('go');
-    const goTxt = document.getElementById('go-txt');
-    const goStats = document.getElementById('go-stats');
-
-    if (goTxt) {
-        goTxt.textContent = `🏆 ${vencedor} venceu o Bloco ${blocoAtual}!`;
-    }
-
-    if (goStats) {
-        const proximoLabel = proximoBloco
-            ? `<p style="margin-top:10px;color:var(--neon-cyan);">⏭️ Próximo: <strong>Bloco ${proximoBloco} — ${NOMES_BLOCOS[proximoBloco]}</strong></p>`
-            : `<p style="margin-top:10px;color:var(--neon-green);">🎓 Todos os blocos concluídos!</p>`;
-
-        goStats.innerHTML = `
-            <p>7ºA: <strong>${scoreA}</strong> pts &nbsp;|&nbsp; 7ºB: <strong>${scoreB}</strong> pts</p>
-            <p>Bloco ${blocoAtual}: <strong>${NOMES_BLOCOS[blocoAtual]}</strong></p>
-            <p>Rodadas: ${rodadaAtual - 1} &nbsp;|&nbsp; Acertos: ${G.acertos}</p>
-            ${proximoLabel}
-        `;
-    }
-
-    // Atualiza o botão: "Próximo Bloco" ou "Nova Batalha"
-    const btnReiniciar = document.querySelector('#go .btn-start');
-    if (btnReiniciar) {
-        if (proximoBloco) {
-            btnReiniciar.textContent = `▶️ Bloco ${proximoBloco}: ${NOMES_BLOCOS[proximoBloco]}`;
-            btnReiniciar.onclick = () => {
-                document.getElementById('go').classList.remove('show');
-                iniciarBloco(proximoBloco);
-            };
-        } else {
-            btnReiniciar.textContent = '🔁 Jogar de Novo (Bloco 1)';
-            btnReiniciar.onclick = () => {
-                document.getElementById('go').classList.remove('show');
-                iniciarBloco(1);
-            };
-        }
-    }
-
-    if (go) go.classList.add('show');
-    tocarSFX('sfx_victory');
-    mostrarFogos();
+/* ── Avatar ─────────────────────────────────────────────── */
+function animar(idVideo) {
+    const img = $('av-img');
+    const v = $(idVideo);
+    if (!v) return;
+    try {
+        $('vid-ok').classList.add('oculto'); $('vid-no').classList.add('oculto');
+        img.classList.add('oculto');
+        v.classList.remove('oculto');
+        v.currentTime = 0;
+        v.play().catch(() => { v.classList.add('oculto'); img.classList.remove('oculto'); });
+        v.onended = () => { v.classList.add('oculto'); img.classList.remove('oculto'); };
+    } catch (e) { img.classList.remove('oculto'); }
 }
 
-function mostrarFogos() {
-    const fx = document.createElement('div');
-    fx.id = 'fx-fogos';
-    fx.innerHTML = '<span>✨</span><span>🎉</span><span>✨</span><span>🎊</span><span>✨</span>';
-    document.body.appendChild(fx);
-    setTimeout(() => fx.remove(), 2800);
+/* ── Fim da batalha ─────────────────────────────────────── */
+function mostrarFim() {
+    const v = B.vencedor(partida);
+    const { A, B: TB } = partida.times;
+    $('fim-vencedor').textContent = v ? `${partida.times[v].nome} venceu a batalha!` : 'Empate!';
+    const pl = $('fim-placar');
+    pl.textContent = '';
+    for (const [chave, t] of [['A', A], ['B', TB]]) {
+        const s = document.createElement('span');
+        const marca = document.createElement('i');
+        marca.className = 'marca marca-' + chave.toLowerCase();
+        s.append(marca, ` ${t.nome}: ${t.pts} pts`);
+        pl.append(s);
+    }
+    const er = $('fim-erros');
+    er.textContent = '';
+    const top = R.maisComuns(errosDaPartida, 3);
+    if (top.length) {
+        const t = document.createElement('strong'); t.textContent = 'Erros mais comuns nesta batalha';
+        const ul = document.createElement('ul');
+        for (const [nome, n] of top) { const li = document.createElement('li'); li.textContent = `${nome} (${n})`; ul.append(li); }
+        er.append(t, ul);
+    }
+    sfx('sfx_victory');
+    fogos();
+    abrirModal('m-fim');
 }
 
-window.reiniciar = () => {
-    document.getElementById('go').classList.remove('show');
-    // Reinicia o mesmo bloco atual
-    iniciarBloco(G.blocoAtivo);
-};
-
-// ═════════════════════════════════════════════════════════
-// 7. MODO BUZZER (Teclas A e B)
-// ═════════════════════════════════════════════════════════
-window.toggleBuzzerMode = () => {
-    modoBuzzer = !modoBuzzer;
-    buzzerAtivo = null;
-    const btn = document.getElementById('btn-buzzer-mode');
-    if (btn) {
-        btn.textContent = modoBuzzer ? '🎯 MODO: BUZZER' : '🔄 MODO: ALTERNADO';
-        btn.style.background = modoBuzzer ? 'var(--neon-cyan)' : '';
-        btn.style.color      = modoBuzzer ? '#000' : '';
+function fogos() {
+    const f = $('fogos');
+    f.textContent = '';
+    const cores = ['#f2b01e', '#3ad6ff', '#ff7ab6', '#35e08f', '#ffd36a'];
+    for (let i = 0; i < 46; i++) {
+        const p = document.createElement('i');
+        p.style.left = (Math.random() * 100) + '%';
+        p.style.background = cores[i % cores.length];
+        p.style.setProperty('--dx', (Math.random() * 240 - 120) + 'px');
+        p.style.animationDelay = (Math.random() * 0.6) + 's';
+        f.append(p);
     }
-    atualizarIndicadorTurno();
-};
+    f.classList.remove('oculto');
+    setTimeout(() => f.classList.add('oculto'), 3400);
+}
 
-document.addEventListener('keydown', e => {
-    // Buzzer: A e B só funcionam no modo buzzer e antes de responder
-    if (modoBuzzer && !G.respondeu) {
-        if ((e.key === 'a' || e.key === 'A') && buzzerAtivo === null) {
-            buzzerAtivo = 'A';
-            atualizarIndicadorTurno();
-            atualizarPlacarVisual();
-            tocarSFX('sfx_tick');
-        }
-        if ((e.key === 'b' || e.key === 'B') && buzzerAtivo === null) {
-            buzzerAtivo = 'B';
-            atualizarIndicadorTurno();
-            atualizarPlacarVisual();
-            tocarSFX('sfx_tick');
-        }
+$('fim-de-novo').addEventListener('click', () => { fecharModal('m-fim'); iniciar(fonteAtual); });
+$('fim-menu').addEventListener('click', () => { fecharModal('m-fim'); voltarAoMenu(); });
+
+function voltarAoMenu() {
+    pararCronometro();
+    pararMusica();
+    calarVoz();
+    partida = null;
+    mostrarTela('tela-central');
+    prepararCentral();
+}
+$('sair-jogo').addEventListener('click', voltarAoMenu);
+
+/* ── Relatório ──────────────────────────────────────────── */
+function desenharRelatorio() {
+    const sel = $('rel-turma');
+    const turmas = R.turmas();
+    const atual = sel.value;
+    sel.textContent = '';
+    const todas = document.createElement('option'); todas.value = ''; todas.textContent = 'Todas as turmas';
+    sel.append(todas);
+    for (const t of turmas) { const o = document.createElement('option'); o.value = t; o.textContent = t; sel.append(o); }
+    sel.value = turmas.includes(atual) ? atual : '';
+    const alvo = $('rel-conteudo');
+    alvo.textContent = '';
+    const lista = R.resumo(sel.value);
+    if (!lista.length) {
+        const p = document.createElement('p'); p.className = 'vazio';
+        p.textContent = 'Ainda não há respostas registradas. Jogue uma batalha para ver o relatório.';
+        alvo.append(p);
+        return;
     }
-
-    // Navegação por teclado (DUA)
-    if ((e.key === 'Enter' || e.key === ' ') && document.activeElement?.tagName === 'BUTTON') {
-        document.activeElement.click();
-        e.preventDefault();
+    for (const a of lista) {
+        const f = R.faixa(a.pct);
+        const it = document.createElement('div'); it.className = 'rel-item';
+        const topo = document.createElement('div'); topo.className = 'rel-topo';
+        const nome = document.createElement('b'); nome.textContent = a.assunto;
+        const dir = document.createElement('span');
+        const fx = document.createElement('span'); fx.className = 'faixa ' + f.id; fx.textContent = `${f.simbolo} ${f.texto}`;
+        dir.append(`${a.pct}% de acerto (${a.acertos} de ${a.respostas}) `, fx);
+        topo.append(nome, dir);
+        const barra = document.createElement('div'); barra.className = 'rel-barra';
+        const preen = document.createElement('i'); preen.style.width = a.pct + '%'; barra.append(preen);
+        it.append(topo, barra);
+        const top = R.maisComuns(a.erros, 3);
+        if (top.length) {
+            const e = document.createElement('div'); e.className = 'rel-erros';
+            e.textContent = 'Erros mais comuns: ' + top.map(([t, n]) => `${t} (${n})`).join(', ');
+            it.append(e);
+        }
+        alvo.append(it);
+    }
+}
+$('rel-turma').addEventListener('change', desenharRelatorio);
+$('rel-csv').addEventListener('click', () => {
+    const blob = new Blob([R.csv()], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Batalha_Matematica_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+});
+$('rel-zerar').addEventListener('click', () => {
+    if (confirm('Apagar todo o relatório guardado neste navegador? Isso não pode ser desfeito.')) {
+        R.zerar();
+        desenharRelatorio();
     }
 });
 
-// ═════════════════════════════════════════════════════════
-// 8. MODAIS — ponte entre HTML (abrirM/fecharM) e ui-manager (mostrarModal)
-// ═════════════════════════════════════════════════════════
-window.abrirM = (id) => mostrarModal(id, true);
-window.fecharM = (id) => mostrarModal(id, false);
+/* ── Modais, ícones e atalhos ───────────────────────────── */
+document.addEventListener('click', (e) => {
+    const ab = e.target.closest('[data-abrir]');
+    if (ab) { abrirModal(ab.dataset.abrir); return; }
+    if (e.target.closest('[data-fechar]')) { fecharModal(e.target.closest('.modal')); return; }
+    if (e.target.classList && e.target.classList.contains('modal') && e.target.id !== 'm-fim') fecharModal(e.target);
+});
 
-window.verPerfilAluno = () => {
-    const patente = G.nivel > 5 ? 'Cientista Master' : 'Explorador';
-    alert(`Cientista: ${G.nome}\nPatente: ${patente}\nAcertos: ${G.acertos} | Erros: ${G.erros}`);
-};
+$('btn-musica').addEventListener('click', () => {
+    const on = alternarMusica();
+    $('btn-musica').innerHTML = on ? ICONES.musica : ICONES.mudo;
+    $('btn-musica').setAttribute('aria-pressed', String(on));
+});
+$('btn-voz').addEventListener('click', () => {
+    const on = alternarVoz();
+    $('btn-voz').innerHTML = on ? ICONES.voz : ICONES.vozOff;
+    $('btn-voz').setAttribute('aria-pressed', String(on));
+});
+$('btn-tela').addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+});
 
-window.exportarRelatorioCSV = () => exportarCSV();
+document.addEventListener('keydown', (e) => {
+    if (e.target.matches && e.target.matches('input, select, textarea')) return;
+    if (e.key === 'Escape') { const m = modalAberto(); if (m && m.id !== 'm-fim') fecharModal(m); return; }
+    if (modalAberto() || !partida || $('tela-jogo').classList.contains('oculto')) return;
+    const k = e.key.toLowerCase();
+    if (partida.cfg.modo === 'buzzer' && !respondeu && !buzzer && (k === 'a' || k === 'b')) {
+        buzzer = k.toUpperCase();
+        sfx('sfx_tick');
+        atualizarPlacar();
+        return;
+    }
+    if (!respondeu && k >= '1' && k <= '4') {
+        const i = Number(k) - 1;
+        if (i < partida.atual.o.length) escolher(i);
+        return;
+    }
+    if (respondeu && !partida.encerrada && (e.key === 'Enter' || e.key === 'ArrowRight')) {
+        if (document.activeElement && document.activeElement.id === 'btn-prox') return; // o próprio botão trata
+        e.preventDefault();
+        proximaRodada();
+    }
+});
 
-// Vincula os demais controles
-window.toggleMusica = toggleMusica;
-window.toggleVoz = toggleVoz;
+iniciarIcones();
+marcarSeg();
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
